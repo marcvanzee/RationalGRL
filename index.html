@@ -1,0 +1,49 @@
+<html>
+<head>
+ <title>RationalGRL Editor</title>
+ <!-- Libraries -->
+ <script src="js/lib/jquery.min.js"></script>
+ <script src="js/lib/lodash.js"></script>
+ <script src="js/lib/backbone.js"></script>
+ <script src="js/lib/easytabs.min.js"></script>
+ <script src="js/lib/joint.js"></script>
+
+ <!-- RationalGRL files -->
+ <script src="js/shapes.js"></script>
+
+ <!-- Style files -->
+ <link rel="stylesheet" href="css/rationalgrl.css" />
+ <link rel="stylesheet" href="css/joint.css" />
+ <link rel="stylesheet" href="css/jquery.contextMenu.min.css" />
+ <link rel="stylesheet" href="css/jqx.base.css" type="text/css" />
+</head>
+<body>
+
+<div id="rationalgrl">
+  <div id="sidebar">
+    Elements<br>
+    <img class="sidebarElement" id="softgoal" src="img/softgoal.png">
+    <img class="sidebarElement" id="goal" src="img/goal.png">
+    <img class="sidebarElement" id="task" src="img/task.png">
+    <img class="sidebarElement" id="resource" src="img/resource.png">
+    <img class="sidebarElement" id="argument" src="img/argument.png"><br><br>
+    Links<br>
+    <img class="sidebarElement" id="decomposition" src="img/decomposition.png">
+    <img class="sidebarElement" id="contribution" src="img/contribution.png">
+    <img class="sidebarElement" id="dependency" src="img/dependency.png">
+    <img class="sidebarElement" id="attack" src="img/attack.png"><br><br> 
+  </div>
+  <div id="paper"></div>
+</div>
+<div id="details-pane">
+    Element name: <input id="name"><br>
+    Element type: <label id="type"></label>
+
+</div>
+
+
+<script src="js/globals.js"></script>
+<script src="js/helper-functions.js"></script>
+<script src="js/listeners.js"></script>
+</body>
+</html>

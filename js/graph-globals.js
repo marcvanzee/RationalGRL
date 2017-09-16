@@ -3,6 +3,7 @@
 */
 
 // Constants.
+const _this = this;
 const HEIGHT = 400;
 const WIDTH = 900;
 const GRID_SIZE = 1;
@@ -43,4 +44,3 @@ let VIEW_CURRENTLY_EDDITING = null;
 let CUR_INSERT_OPERATION = InsertOperation.NOTHING;
 let LINE_TO_DRAG = null;
 let ELEMENT_TO_CONNECT = null;
-let ELEMENT_COUNTER = 1;

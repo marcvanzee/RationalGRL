@@ -37,35 +37,41 @@ Paper.on('blank:pointerup', function(e, x, y) {
     if (!isWithinBounds(x, y) || !currentlyAddingElement()) {
         return;
     }
-    var newElement;
+    var newGraphElement, newIEElement;
 
     switch (CUR_INSERT_OPERATION) {
         case InsertOperation.SOFTGOAL:
-            newElement = new joint.shapes.tm.Softgoal;
+            newGraphElement = new joint.shapes.tm.Softgoal;
+            newIEElement = ElementType.SOFTGOAL;
             break;
         case InsertOperation.GOAL:
-            newElement = new joint.shapes.tm.Goal;
+            newGraphElement = new joint.shapes.tm.Goal;
+            newIEElement = ElementType.GOAL;
             break;
         case InsertOperation.TASK:
-            newElement = new joint.shapes.tm.Task;
+            newGraphElement = new joint.shapes.tm.Task;
+            newIEElement = ElementType.TASK;
             break;
         case InsertOperation.RESOURCE:
-            newElement = new joint.shapes.tm.Resource;
+            newGraphElement = new joint.shapes.tm.Resource;
+            newIEElement = ElementType.RESOURCE;
             break;
         case InsertOperation.ARGUMENT:
-            newElement = new joint.shapes.tm.Argument;
+            newGraphElement = new joint.shapes.tm.Argument;
+            newIEElement = ElementType.ARGUMENT;
             
     }
-    newElement.position(Math.max(0,x-50), Math.max(0,y-30));
-    Graph.addCells([newElement]);
-    var newElementView = Paper.findViewByModel(newElement);
-    newElementView.setLabel(CUR_INSERT_OPERATION + (ELEMENT_COUNTER++));
+    newGraphElement.position(Math.max(0,x-50), Math.max(0,y-30));
+    Graph.addCells([newGraphElement]);
+    var newElementView = Paper.findViewByModel(newGraphElement);
+    const name = CUR_INSERT_OPERATION;
+    rationalGrlModel.addElement(newElementView.id, newIEElement, name, newElementView);
+    newElementView.setLabel(name);
 
     resetState();
 });
 
 Paper.on('cell:pointerdblclick', function(cellView, evt, x, y) {
-    console.log(cellView);
     $('#name').val(cellView.getLabel());
     $('#type').html(cellView.model.attributes.type);
     $('#details-pane').show();
@@ -74,7 +80,10 @@ Paper.on('cell:pointerdblclick', function(cellView, evt, x, y) {
 
 Paper.on('cell:pointerdown', function(cellView, evt, x, y) {
     // If we are not adding a link, do nothing and allow the element to be dragged.
-    if (!currentlyAddingLink()) return;
+    if (!currentlyAddingLink()) {
+        cellView.options.interactive = true;
+        return;
+    }
 
     // if we are adding a link, don't drag the element.
     cellView.options.interactive = false;
@@ -159,6 +168,8 @@ Paper.on('cell:pointerup', function(cellView, evt, x, y) {
     LINE_TO_DRAG.set({
             'target': { id: targetView.model.id }
     });
+    console.log(LINE_TO_DRAG);
+    rationalGrlModel.addLink(LINE_TO_DRAG.id, CUR_INSERT_OPERATION, sourceView.id, targetView.id, LINE_TO_DRAG);
     LINE_TO_DRAG = null; // don't delete it
     resetState();
 });
@@ -180,7 +191,6 @@ Paper.on('cell:pointermove', function (cellView, evt, x, y) {
     //if you fire the event all the time you get a stack overflow
     if (constrained) { 
         cellView.pointermove(evt, constrainedX, constrainedY);
-        cellView.setLabel('test'); 
     }
 });
 

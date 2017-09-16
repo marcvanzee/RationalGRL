@@ -34,15 +34,15 @@ function currentlyAddingLink() {
     return currentlyAddingIELink() || currentlyAddingAttack();
 }
 
-function isIE(element) {
+function isGraphIE(element) {
     return element == 'tm.Task' || element == 'tm.Goal' || element == 'tm.Resource' || element == 'tm.Softgoal';
 }
 
-function isArgument(element) {
+function isGraphArgument(element) {
     return element == 'tm.Argument';
 }
 
-function isElement(element) {
+function isGraphElement(element) {
     return isIE(element) || isArgument(element);
 }
 
@@ -91,17 +91,44 @@ function hasDecomposition(model) {
 }
 
 function canStartLinkFromElement(element) {
-    if (currentlyAddingAttack() && isArgument(element)) return true;
-    if (currentlyAddingIELink() && isIE(element)) return true;
+    if (currentlyAddingAttack() && isGraphArgument(element)) return true;
+    if (currentlyAddingIELink() && isGraphIE(element)) return true;
     return false;
 }
 
 function canEndLinkAtElement(element) {
-    if (currentlyAddingAttack() && (isArgument(element) || isIE(element))) return true;
-    if (currentlyAddingIELink() && isIE(element)) return true;
+    if (currentlyAddingAttack() && (isGraphArgument(element) || isGraphIE(element))) return true;
+    if (currentlyAddingIELink() && isGraphIE(element)) return true;
     return false;
 }
 
 function isWithinBounds(x, y) {
     return x > 0 && y > 0 && x < WIDTH && y < HEIGHT;
+}
+
+function nextId() { return ELEMENT_COUNTER++; }
+
+function isArgument(type) { 
+    return type == ElementType.ARGUMENT;
+}
+
+function isElement(type) { 
+    return Object.values(ElementType).indexOf(type) > -1;
+}
+
+function isAttack(type) {
+    return type = LinkType.ATTACK;
+}
+
+function isLink(type) { 
+    return Object.values(LinkType).indexOf(type) > -1;
+}
+function insertTypeToLinkType(type) {
+    switch (type) {
+        case InsertOperation.CONTRIBUTION: return LinkType.CONTRIBUTION;
+        case InsertOperation.DEPENDENCY: return LinkType.DEPENDENCY;
+        case InsertOperation.DECOMPOSITION: return LinkType.DECOMPOSITION;
+        case InsertOperation.ATTACK: return LinkType.ATTACK;
+        default: return LinkType.UNKNOWN;
+    }
 }

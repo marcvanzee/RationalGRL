@@ -147,6 +147,7 @@ joint.shapes.tm.ElementView = joint.dia.ElementView.extend({
         highlight: function() {},
         removeBox: function(evt) {
             this.$box.remove();
+            rationalGrlModel.removeElement(this.id);
         },
         setLabel: function(name) {
             this.$box.find('.label').text(name);
@@ -191,7 +192,7 @@ joint.shapes.tm.Decomposition = joint.dia.Link.extend({
         attrs: {
             '.marker-arrowheads': { display: 'none' },
             '.connection': { 'stroke-width': 1},
-            '.marker-target': { d: 'M10.833,13.682,10.833,5.5,5.5,5.5,5.5,25.5,10.833,25.5z' },
+            '.marker-source': { d: 'M10.833,13.682,10.833,5.5,5.5,5.5,5.5,25.5,10.833,25.5z' },
             
         }
     }, joint.dia.Link.prototype.defaults)

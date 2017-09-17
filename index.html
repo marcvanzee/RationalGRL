@@ -35,10 +35,78 @@
   </div>
   <div id="paper"></div>
 </div>
-<div id="details-pane">
-    Element name: <input id="name"><br>
-    Element type: <label id="type"></label>
-
+<div class="details-pane">
+<div class="element-details-container">
+  <table class="element-table">
+    <thead>
+      <tr><td colspan=2>Element Details</td></tr>
+    </thead>
+    <tr>
+      <td class="table-key">Element name</td>
+      <td class="table-value"><input class="element-name-input"><button type="button" class="rename-button">Rename</button></td>
+    </tr>
+    <tr>
+      <td class="table-key">Element type</td>
+      <td class="table-value"><div class="element-type"></div></td>
+    </tr>
+    <tr>
+      <td class="table-key">Critical questions</td>
+      <td class="table-value"><div class="critical-questions"></div></td>
+    </tr>
+    <tr>
+      <td class="table-key">Naming history</td>
+      <td class="table-value"><div class="naming-history"></div></td>
+    </tr>
+    <tr>
+      <td class="table-key">Notes</td>
+      <td class="table-value"><div class="element-notes"></div></td>
+    </tr>
+  </table>
+</div>
+<div class="question-details-container">
+  <table class="question-table">
+    <thead>
+      <tr><td colspan=2>Critical question details</td></tr>
+    </thead>
+    <tr>
+      <td class="table-key">Element name</td>
+      <td class="table-value"><div class="element-name"></div></td>
+    </tr>
+    <tr>
+      <td class="table-key">Critical question</td>
+      <td class="table-value"><div class="critical-question"></div></td>
+    </tr>
+    <tr>
+      <td class="table-key">Answer</td>
+      <td class="table-value"><div class="answer"></div></td>
+    </tr>
+    <tr>
+      <td class="table-key">Explanation</td>
+      <td class="table-value"><input class="explanation-input"></td>
+    </tr>
+  </table>
+  <button type="button" class="answer-button">Answer</button>
+</div>
+<div class="argument-details-container">
+  <table class="argument-table">
+    <thead>
+      <tr><td colspan=2>Argument details</td></tr>
+    </thead>
+    <tr>
+      <td class="table-key">Name</td>
+      <td class="table-value"><input class="name"></td>
+    </tr>
+    <tr>
+      <td class="table-key">Explanation</td>
+      <td class="table-value"><input class="explanation"></td>
+    </tr>
+    <tr>
+      <td class="table-key">Critical question</td>
+      <td class="table-value"><div class="critical-question"></div></td>
+    </tr>
+  </table>
+  <button type="button" class="save-button">Save</button>
+</div>
 </div>
 
 

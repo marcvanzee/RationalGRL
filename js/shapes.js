@@ -211,7 +211,7 @@ joint.shapes.tm.Dependency = joint.dia.Link.extend({
 
 joint.shapes.tm.Attack = joint.dia.Link.extend({
     defaults: joint.util.deepSupplement({
-        type: 'tm.Contribution',
+        type: 'tm.Attack',
         attrs: {
             '.marker-vertices': { display : 'none' },
             '.marker-arrowheads': { display: 'none' },

@@ -9,6 +9,10 @@ body {
   padding: 0px;
 }
 
+h3 {
+  font-size: 15px;
+}
+
 #paper {
   margin-left: 115px;
   height: 500px;
@@ -29,17 +33,57 @@ body {
   cursor: pointer;
 }
 
-#details-pane {
+/* Details panes */
+
+/* General */
+.details-pane {
   margin-left: 115px;
   border: 1px solid black;
   height: 200px;
   overflow: hidden;
   padding: 5px;
-  display: none;
 }
 
-#type {
+thead {
+  font-size: 14px;
   font-weight: bold;
+}
+
+table {
+  font-size: 12px;
+}
+
+td {
+  padding-bottom: 4px;
+}
+
+.table-key {
+  font-weight: bold;
+  width: 150px;
+}
+
+/* Element details pane */
+.element-details-container {
+  display: none;
+}
+input.element-name-input {
+  width: 150px;
+}
+
+/* Critical questions details pane */
+.question-details-container {
+  display: none;
+}
+input.explanation-input {
+  width: 350px;
+}
+
+/* Argument details pane */
+.argument-details-container {
+  display: none;
+}
+input.explanation {
+  width: 350px;
 }
 
 /* Toolbar of individual elements */

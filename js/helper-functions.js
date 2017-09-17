@@ -123,6 +123,22 @@ function isAttack(type) {
 function isLink(type) { 
     return Object.values(LinkType).indexOf(type) > -1;
 }
+
+function getType(graphElement) {
+    switch (graphElement.attributes.type) {
+        case 'tm.Contribution': return ElementType.CONTRIBUTION;
+        case 'tm.Decomposition': return ElementType.DECOMPOSITION;
+        case 'tm.Dependency': return ElementType.DEPENDENCY;
+        case 'tm.Attack': return ElementType.ATTACK;
+        case 'tm.Softgoal': return ElementType.SOFTGOAL;
+        case 'tm.Goal': return ElementType.GOAL;
+        case 'tm.Task': return ElementType.TASK;
+        case 'tm.Resource': return ElementType.RESOURCE;
+        case 'tm.Argument': return ElementType.ARGUMENT;
+        default: return ElementType.UNKNOWN;
+    }
+}
+
 function insertTypeToLinkType(type) {
     switch (type) {
         case InsertOperation.CONTRIBUTION: return LinkType.CONTRIBUTION;
@@ -131,4 +147,178 @@ function insertTypeToLinkType(type) {
         case InsertOperation.ATTACK: return LinkType.ATTACK;
         default: return LinkType.UNKNOWN;
     }
+}
+
+function insertTypeToElementType(type) {
+    switch (type) {
+        case InsertOperation.SOFTGOAL: return ElementType.SOFTGOAL;
+        case InsertOperation.GOAL: return ElementType.GOAL;
+        case InsertOperation.TASK: return ElementType.TASK;
+        case InsertOperation.RESOURCE: return ElementType.RESOURCE;
+        case InsertOperation.ARGUMENT: return ElementType.ARGUMENT;
+        default: return ElementType.UNKNOWN;
+    }
+}
+
+function showElementDetails() {
+    if (!ELEMENT_DETAILS) {
+        console.error("Cannot show element details: No element selected");
+        return;
+    }
+    const element = ELEMENT_DETAILS;
+    const detailsPane = $(ELEMENT_DETAILS_DIV);
+    detailsPane.find('.element-name-input').val(element.getName());
+    detailsPane.find('.element-type').html(element.type);
+    let criticalQuestionHtml = '';
+    for (const question of questionsDatabase.getQuestionsForType(element.type)) {
+        const name = question.name;
+        if (rationalGrlModel.elementHasAnswer(element.id, name)) {
+            criticalQuestionHtml += '' + question.question + 
+                ' <strong> (Answered)</strong> <button type="button" class="critical-question-button" name="' + 
+                question.name + '">View existing answer</button><br>';
+        } else {
+            criticalQuestionHtml += '' + question.question + 
+                ' <button type="button" class="critical-question-button" name="' + 
+                question.name + '">Answer</button><br>';
+        }
+    }
+    detailsPane.find('.critical-questions').html(criticalQuestionHtml || 'No questions found');
+    setNamingHistoryDiv(element);
+    showDetailsDiv(ELEMENT_DETAILS_DIV);
+}
+
+function hideAllDetailsDivs() {
+    [ELEMENT_DETAILS_DIV, QUESTION_DETAILS_DIV, ARGUMENT_DETAILS_DIV, LINK_DETAILS_DIV].forEach(div => {
+        $(div).hide();
+    });
+}
+
+function showDetailsDiv(divElement) {
+    hideAllDetailsDivs();
+    $(divElement).show();
+}
+
+function setNamingHistoryDiv(element) {
+    $('.element-details-container .naming-history').html(element.names.join(' > '));
+}
+
+function showCriticalQuestionDetails() {
+    if (!ELEMENT_DETAILS || !CRITICAL_QUESTION_DETAILS) {
+        console.error("Cannot show critical question details: No element or question selected");
+        return;
+    }
+    const element = ELEMENT_DETAILS;
+    const question = CRITICAL_QUESTION_DETAILS;
+    const detailsPane = $('.question-details-container');
+    detailsPane.find('.element-name').html(element.getName());
+    detailsPane.find('.critical-question').html(question.question);
+    detailsPane.find('.answer').html(question.answer);
+    detailsPane.find('.explanation-input').val(question.explanation);
+    showDetailsDiv(QUESTION_DETAILS_DIV);
+}
+
+function answerCriticalQuestion() {
+    if (!ELEMENT_DETAILS || !CRITICAL_QUESTION_DETAILS) {
+        console.error("Cannot answer critical question: No element or question selected");
+        return;
+    }
+    const element = ELEMENT_DETAILS;
+    const question = CRITICAL_QUESTION_DETAILS;
+    question.explanation = $('.question-details-container .explanation-input').val();
+    rationalGrlModel.answerQuestion(element.id, question);
+
+    switch (question.effect) {
+        case CriticalQuestionEffect.DISABLE:
+          applyDisableEffect();
+          break;
+        case CriticalQuestionEffect.INTRO_SOURCE:
+          console.error("Intro source effect is not yet supported");
+          break;
+        case CriticalQuestionEffect.INTRO_DEST:
+          console.error("Intro dest effect is not yet supported");
+          break;
+    }
+    CRITICAL_QUESTION_DETAILS = null;
+    showElementDetails();
+}
+
+function applyDisableEffect() {
+    const element = ELEMENT_DETAILS;
+    const view = rationalGrlModel.getView(element.id);
+    const position = view.model.attributes.position;
+    const argument = addNewElementAt(position.x + 100, position.y + 150, 
+                    ElementType.ARGUMENT, CRITICAL_QUESTION_DETAILS.name);
+
+    const link = createLink(LinkType.ATTACK);
+    link.set({
+        source: { id: argument.id },
+        target: { id: element.id },
+    });
+    Graph.addCells([link]);
+
+    rationalGrlModel.addLink(link.id, InsertOperation.ATTACK, argument.id, element.id, link);
+    rationalGrlModel.linkArgumentToQuestion(argument.id, CRITICAL_QUESTION_DETAILS.name);
+}
+
+function addNewElementAt(x, y, type, name) {
+    var newGraphElement;
+
+    switch (type) {
+        case ElementType.SOFTGOAL:
+            newGraphElement = new joint.shapes.tm.Softgoal;
+            break;
+        case ElementType.GOAL:
+            newGraphElement = new joint.shapes.tm.Goal;
+            break;
+        case ElementType.TASK:
+            newGraphElement = new joint.shapes.tm.Task;
+            break;
+        case ElementType.RESOURCE:
+            newGraphElement = new joint.shapes.tm.Resource;
+            break;
+        case ElementType.ARGUMENT:
+            newGraphElement = new joint.shapes.tm.Argument;
+    }
+    newGraphElement.position(Math.max(0,x-50), Math.max(0,y-30));
+    Graph.addCells([newGraphElement]);
+    rationalGrlModel.addElement(newGraphElement, name);
+
+    return newGraphElement;
+}
+
+// We don't have a function to add the link, since links may be added
+// in various way (e.g., by connecting two elements or to a specific (x,y)
+// location).
+function createLink(type) {
+    switch (type) {
+        case LinkType.CONTRIBUTION: return new joint.shapes.tm.Contribution;
+        case LinkType.DECOMPOSITION: return new joint.shapes.tm.Decomposition;
+        case LinkType.DEPENDENCY: return new joint.shapes.tm.Dependency;
+        case LinkType.ATTACK: return new joint.shapes.tm.Attack;
+        default: 
+            console.error('Cannot create link: unknown type', type);
+            return null;
+    }
+}
+
+function showArgumentDetails() {
+    if (!ELEMENT_DETAILS || 
+            rationalGrlModel.getType(ELEMENT_DETAILS.id) != ElementType.ARGUMENT) {
+        console.error("Cannot show argument details: No element selected");
+        return;
+    }
+    const argument = ELEMENT_DETAILS;
+    const detailsPane = $(ARGUMENT_DETAILS_DIV);
+    detailsPane.find('.name').val(argument.name);
+    detailsPane.find('.explanation').val(argument.explanation);
+    const questionHtml = detailsPane.find('.critical-question');
+
+    const questionName = rationalGrlModel.getCriticalQuestionForArgument(argument.id);
+    if (!questionName) {
+        questionHtml.html('(None)');
+    } else {
+        const question = questionsDatabase.getQuestionByName(questionName);
+        questionHtml.html(question.question + ' (' + question.name + ')');
+    } 
+    showDetailsDiv(ARGUMENT_DETAILS_DIV);
 }

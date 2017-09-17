@@ -37,45 +37,23 @@ Paper.on('blank:pointerup', function(e, x, y) {
     if (!isWithinBounds(x, y) || !currentlyAddingElement()) {
         return;
     }
-    var newGraphElement, newIEElement;
-
-    switch (CUR_INSERT_OPERATION) {
-        case InsertOperation.SOFTGOAL:
-            newGraphElement = new joint.shapes.tm.Softgoal;
-            newIEElement = ElementType.SOFTGOAL;
-            break;
-        case InsertOperation.GOAL:
-            newGraphElement = new joint.shapes.tm.Goal;
-            newIEElement = ElementType.GOAL;
-            break;
-        case InsertOperation.TASK:
-            newGraphElement = new joint.shapes.tm.Task;
-            newIEElement = ElementType.TASK;
-            break;
-        case InsertOperation.RESOURCE:
-            newGraphElement = new joint.shapes.tm.Resource;
-            newIEElement = ElementType.RESOURCE;
-            break;
-        case InsertOperation.ARGUMENT:
-            newGraphElement = new joint.shapes.tm.Argument;
-            newIEElement = ElementType.ARGUMENT;
-            
+    let type = insertTypeToElementType(CUR_INSERT_OPERATION);
+    if (type == ElementType.UNKNOWN) {
+        console.log('Cannot add element: unknown insert operation.');
+    } else {
+        addNewElementAt(x, y, type, type);
+        resetState();
     }
-    newGraphElement.position(Math.max(0,x-50), Math.max(0,y-30));
-    Graph.addCells([newGraphElement]);
-    var newElementView = Paper.findViewByModel(newGraphElement);
-    const name = CUR_INSERT_OPERATION;
-    rationalGrlModel.addElement(newElementView.id, newIEElement, name, newElementView);
-    newElementView.setLabel(name);
-
-    resetState();
 });
 
 Paper.on('cell:pointerdblclick', function(cellView, evt, x, y) {
-    $('#name').val(cellView.getLabel());
-    $('#type').html(cellView.model.attributes.type);
-    $('#details-pane').show();
-
+    const id = cellView.model.id;
+    ELEMENT_DETAILS = rationalGrlModel.elementIdMap[id];
+    if (rationalGrlModel.getType(id) == ElementType.ARGUMENT) {
+        showArgumentDetails();
+    } else {
+        showElementDetails();
+    }
 });
 
 Paper.on('cell:pointerdown', function(cellView, evt, x, y) {
@@ -93,26 +71,12 @@ Paper.on('cell:pointerdown', function(cellView, evt, x, y) {
         return;
     }
 
-    var link;
-    switch (CUR_INSERT_OPERATION) {
-        case InsertOperation.CONTRIBUTION: 
-            link = new joint.shapes.tm.Contribution;
-            break;
-        case InsertOperation.DECOMPOSITION: 
-            link = new joint.shapes.tm.Decomposition;
-            break;
-        case InsertOperation.DEPENDENCY:
-            link = new joint.shapes.tm.Dependency;
-            break;
-        case InsertOperation.ATTACK:
-            link = new joint.shapes.tm.Attack;
-
-    }
+    const link = createLink(insertTypeToLinkType(CUR_INSERT_OPERATION));
     link.set({
                 'source': { id: cellView.model.id },
                 'target': { x: x, y: y }
             })
-            .addTo(this.model);
+            .addTo(Paper.model);
 
     var linkView = link.findView(this);
 
@@ -168,7 +132,6 @@ Paper.on('cell:pointerup', function(cellView, evt, x, y) {
     LINE_TO_DRAG.set({
             'target': { id: targetView.model.id }
     });
-    console.log(LINE_TO_DRAG);
     rationalGrlModel.addLink(LINE_TO_DRAG.id, CUR_INSERT_OPERATION, sourceView.id, targetView.id, LINE_TO_DRAG);
     LINE_TO_DRAG = null; // don't delete it
     resetState();
@@ -198,4 +161,51 @@ Paper.on('cell:pointermove', function (cellView, evt, x, y) {
 // disable the default browser's context menu.
 $(document).on('contextmenu', function (e) {
     return false;
+});
+
+$(ELEMENT_DETAILS_DIV).on("click", ".rename-button", function() {
+    if (!ELEMENT_DETAILS) {
+        console.log('Cannot rename element: No element set.');
+        return;
+    }
+    const newName = $('.element-details-container .element-name-input').val();
+    if (!newName || !newName.length) {
+        alert('No name set for element!');
+        return;
+    }
+    if (newName == ELEMENT_DETAILS.getName()) return;
+
+    rationalGrlModel.rename(ELEMENT_DETAILS.id, newName);
+
+    setNamingHistoryDiv(ELEMENT_DETAILS);
+});
+
+$(ELEMENT_DETAILS_DIV).on("click", ".critical-question-button", function() {
+    // Create a new critical question and store it in a global variable, but don't assign
+    // it to the element yet. Only do this once the question has been answered.
+    // Don't create a new one if an answer exists already.
+    const name = $('.element-details-container .critical-question-button').attr('name');
+    if (rationalGrlModel.elementHasAnswer(ELEMENT_DETAILS.id, name)) {
+        CRITICAL_QUESTION_DETAILS = rationalGrlModel.getAnswer(ELEMENT_DETAILS.id, name);
+    } else {
+        CRITICAL_QUESTION_DETAILS = jQuery.extend(true, {}, 
+            questionsDatabase.getQuestionByName(name));
+    }
+    showCriticalQuestionDetails();
+});
+
+$(QUESTION_DETAILS_DIV).on("click", ".answer-button", function() {
+    // If the question has already been answered, only update the explanation.
+    if (rationalGrlModel.elementHasAnswer(ELEMENT_DETAILS.id, CRITICAL_QUESTION_DETAILS.name)) {
+        CRITICAL_QUESTION_DETAILS.explanation = $('.question-details-container .explanation-input').val();
+    }
+    answerCriticalQuestion();
+})
+
+$(ARGUMENT_DETAILS_DIV).on("click", ".save-button", function() {
+    const argument = ELEMENT_DETAILS;
+    const container = $(ARGUMENT_DETAILS_DIV);
+    argument.explanation = container.find('.explanation').val();
+
+    rationalGrlModel.rename(argument.id, container.find('.name').val());
 });

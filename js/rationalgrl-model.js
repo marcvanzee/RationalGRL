@@ -3,7 +3,8 @@ const ElementType = {
   GOAL: 'Goal',
   TASK: 'Task',
   RESOURCE: 'Resource',
-  ARGUMENT: 'Argument'
+  ARGUMENT: 'Argument',
+  UNKNOWN: 'Unknown',
 };
 
 const LinkType = {
@@ -37,23 +38,25 @@ const ElementAcceptStatus = {
 };
 
 const CriticalQuestionEffect = {
-  INTRO: 'Intro',
+  INTRO_SOURCE: 'Intro Source',
+  INTRO_DEST: 'Intro Dest',
   DISABLE: 'Disable',
-  RENAME: 'Rename',
 }
 
 class CriticalQuestion {
-  constructor(name, question, applicableTo, effect) {
+  constructor(name, question, answer, applicableTo, effect) {
     this.name = name;
     this.question = question;
     this.applicableTo = applicableTo;
     this.effect = effect;
+    this.answer = answer;
+    this.explanation = '';
   }
 }
 
 class CriticalQuestionsDatabase {
   constructor() {
-    this.questions = [];
+    this.questionByName = {};
     this.iEelementToQuestionMap = {};
     this.iEelementToQuestionMap[ElementType.SOFTGOAL] = [];
     this.iEelementToQuestionMap[ElementType.GOAL] = [];
@@ -65,7 +68,7 @@ class CriticalQuestionsDatabase {
     this.iElinkToQuestionMap[LinkType.DEPENDENCY] = [];
   }
   addQuestion(question) {
-    this.questions.push(question);
+    this.questionByName[question.name] = question;
     for (const type of question.applicableTo) {
       if (isElement(type)) {
         this.iEelementToQuestionMap[type].push(question);
@@ -75,21 +78,26 @@ class CriticalQuestionsDatabase {
       }
     }
   }
-
+  getQuestionsForType(type) {
+    return this.iEelementToQuestionMap[type];
+  }
+  getQuestionByName(name) {
+    return this.questionByName[name];
+  }
 }
 
 const questionsDatabase = new CriticalQuestionsDatabase();
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ1", "Is the resource available?", 
+  new CriticalQuestion("CQ1", "Is the resource available?", "No",
           [ElementType.RESOURCE], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ2a", "Is the task possible?", 
+  new CriticalQuestion("CQ2a", "Is the task possible?", "No",
           [ElementType.TASK], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ3", "Can the goal be realized?", 
+  new CriticalQuestion("CQ3", "Can the goal be realized?", "No",
           [ElementType.GOAL], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ4", "Is the softgoal legitimate?", 
+  new CriticalQuestion("CQ4", "Is the softgoal legitimate?", "No",
           [ElementType.SOFTGOAL], CriticalQuestionEffect.DISABLE));
 
 class IEElement {
@@ -98,7 +106,12 @@ class IEElement {
     this.names = [name];
     this.type = type;
     this.acceptStatus = ElementAcceptStatus.ACCEPTED;
-    this.explanation = "";
+    this.notes = '';
+  }
+  getName() { 
+    const name = this.names.slice(-1)[0];
+    if (!name) console.error("No name for element with id ", this.id);
+    return name;
   }
 }
 
@@ -119,6 +132,7 @@ class Argument {
     this.id = id;
     this.name = name;
     this.acceptStatus = ElementAcceptStatus.ACCEPTED;
+    this.explanation = '';
   }
 }
 
@@ -145,12 +159,20 @@ class RationalGRLModel {
     // Map containg elementId -> [attacLinkId] elements.
     this.attackMap = {};
     // Map from any element's id to its graph element.
-    this.viewIdMap = {};
+    this.graphElementMap = {};
     this.allLinksMaps = [this.dependencyMap, this.contributionMap, this.decompositionMap,
                           this.attackMap];
+    // Map containing elementId -> [CriticalQuestion], which are
+    // all the critical questions that have been answered for the element.
+    this.elementIdToAnsweredQuestionsMap = {};
+    // Map from arguments to the name of a critical question. This will be populated
+    // if the argument was created as the result of answering a critical question.
+    this.argumentIdToCriticalQuestionMap = {};
   }
 
-  addElement(id, type, name, view) {
+  addElement(graphElement, name) {
+    const type = getType(graphElement);
+    const id = graphElement.id;
     if (!isElement(type)) {
       console.error("Type not valid element: ", type);
       return;
@@ -159,7 +181,8 @@ class RationalGRLModel {
         isArgument(type) ?
           new Argument(id, name)
         : new IEElement(id, type, name);
-    this.viewIdMap[id] = view;
+    this.graphElementMap[id] = graphElement;
+    Paper.findViewByModel(graphElement).setLabel(name);
   }
 
   // Remove the element and all connected links (incoming and outgoing).
@@ -190,11 +213,11 @@ class RationalGRLModel {
       for (const link of linksToRemove) {
         delete this.linkIdMap[link.id];
       }
-      console.log(this);
     }
+    delete this.graphElementMap[id];
   }
 
-  addLink(id, insertType, fromId, toId, view) {
+  addLink(id, insertType, fromId, toId, graphLink) {
     const type = insertTypeToLinkType(insertType);
     if (type == LinkType.UNKNOWN) {
       console.error("Invalid InsertOperation when adding link: ", insertType);
@@ -204,12 +227,13 @@ class RationalGRLModel {
         new AttackLink(id, fromId, toId)
       : new IELink(id, type, fromId, toId);
       this.linkIdMap[id] = link;
-    this.insertLinkToMaps(link, type, view);
+    this.insertLinkToMaps(link, type, graphLink);
   }
 
-  insertLinkToMaps(link, type, view) {
+  insertLinkToMaps(link, type, graphLink) {
     const fromId = link.fromId;
     let map = null;
+    this.graphElementMap[link.id] = graphLink;
     switch(type) {
       case LinkType.ATTACK: 
         map = this.attackMap;
@@ -224,7 +248,7 @@ class RationalGRLModel {
           link.decompositionType = map[fromId][0].decompositionType;
         } else {
           // initialize the decomposition description of the graph element.
-          this.viewIdMap[fromId].setDecomposition('and');
+          this.getView(link.id).setDecomposition('and');
         }
         break;
       case LinkType.DEPENDENCY:
@@ -234,13 +258,55 @@ class RationalGRLModel {
     if (map[fromId]) map[fromId].push(link);
     else map[fromId] = [link];
     this.linkIdMap[link.id] = link;
-    this.viewIdMap[link.id] = view
-    console.log(this);
   }
 
   getDecompositionLabel(id) {
     const map = this.decompositionMap;
     return map[id] && map[id].length ? map[id][0].decompositionType : '';
+  }
+
+  rename(id, newName) {
+    const element = this.elementIdMap[id];
+    if (element.hasOwnProperty('names')) element.names.push(newName);
+    else element.name = newName;
+    const graphElement = this.graphElementMap[id];
+    Paper.findViewByModel(graphElement).setLabel(newName);
+  }
+
+  answerQuestion(id, question) {
+    const map = this.elementIdToAnsweredQuestionsMap;
+    if (!map[id] || !map[id].length) map[id] = [question];
+    else map[id].push(question);
+  }
+
+  getView(id) {
+    return Paper.findViewByModel(this.graphElementMap[id]);
+  }
+
+  elementHasAnswer(id, name) {
+    return (this.elementIdToAnsweredQuestionsMap[id] || [])
+        .map(question => question.name)
+        .indexOf(name) != -1;
+  }
+
+  getAnswer(id, name) {
+    for (const answer of this.elementIdToAnsweredQuestionsMap[id] || []) {
+      if (answer.name == name) return answer;
+    }
+    console.error("Element with id ", id, " does not have answer ", name);
+    return null;
+  }
+
+  linkArgumentToQuestion(id, name) {
+    this.argumentIdToCriticalQuestionMap[id] = name;
+  }
+
+  getType(id) {
+    return getType(this.graphElementMap[id]);
+  }
+
+  getCriticalQuestionForArgument(id) {
+    return this.argumentIdToCriticalQuestionMap[id];
   }
 }
 

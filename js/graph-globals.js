@@ -31,10 +31,7 @@ const Paper = new joint.dia.Paper({
     gridSize: GRID_SIZE,
     height: HEIGHT,
     width: WIDTH,
-    interactive: {
-        vertexAdd: false
-    },
-    linkPinning: false
+    linkPinning: false,
 });
 
 /**

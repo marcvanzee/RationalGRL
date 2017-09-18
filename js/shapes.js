@@ -172,13 +172,14 @@ joint.shapes.tm.ArgumentView = joint.shapes.tm.ElementView;
 
 joint.shapes.tm.Contribution = joint.dia.Link.extend({
     defaults: joint.util.deepSupplement({
+        markup: defaultLinkMarkup(),
         type: 'tm.Contribution',
         attrs: {
-            '.marker-vertices': { display : 'none' },
-            '.marker-arrowheads': { display: 'none' },
-            '.connection-wrap': { display: 'none' },
-            '.connection': { 'stroke-width': 1},
-            '.marker-target': { d: 'M 15 0 L 0 8 15 15 0 8 15 8 0 8 15 0' }
+            '.marker-target': { 
+                d: 'M 15 0 L 0 8 15 15 0 8 15 8 0 8 15 0',
+                'stroke-width': 3 
+            },
+            '.connection': { 'stroke-width': 3 },
         },
         labels: [
         { position: 0.5, attrs: { text: { text: 'help (+)', },  }}
@@ -188,11 +189,14 @@ joint.shapes.tm.Contribution = joint.dia.Link.extend({
 
 joint.shapes.tm.Decomposition = joint.dia.Link.extend({
     defaults: joint.util.deepSupplement({
+        markup: defaultLinkMarkup(),
         type: 'tm.Decomposition',
         attrs: {
-            '.marker-arrowheads': { display: 'none' },
-            '.connection': { 'stroke-width': 1},
-            '.marker-source': { d: 'M10.833,13.682,10.833,5.5,5.5,5.5,5.5,25.5,10.833,25.5z' },
+            '.marker-source': { 
+                d: 'M10.833,13.682,10.833,5.5,5.5,5.5,5.5,25.5,10.833,25.5z',
+                'stroke-width': 3 
+            },
+            '.connection': { 'stroke-width': 3}
             
         }
     }, joint.dia.Link.prototype.defaults)
@@ -200,11 +204,13 @@ joint.shapes.tm.Decomposition = joint.dia.Link.extend({
 
 joint.shapes.tm.Dependency = joint.dia.Link.extend({
     defaults: joint.util.deepSupplement({
+        markup: defaultLinkMarkup(),
         type: 'tm.Dependency',
         attrs: {
-            '.marker-arrowheads': { display: 'none' },
-            '.connection': { 'stroke-width': 1},
-            '.marker-target': { d: 'm59.999991,26.418186l-13.499993,0l0,0c-7.455848,0 -13.499998,5.055111 -13.499998,11.290907c0,6.235796 6.04415,11.290907 13.499998,11.290907l13.499993,0l0,-22.581814z' },
+            '.marker-target': { 
+                d: 'm59.999991,26.418186l-13.499993,0l0,0c-7.455848,0 -13.499998,5.055111 -13.499998,11.290907c0,6.235796 6.04415,11.290907 13.499998,11.290907l13.499993,0l0,-22.581814z',
+            },
+            '.connection': { 'stroke-width': 3}
         }
     }, joint.dia.Link.prototype.defaults)
 });
@@ -213,11 +219,8 @@ joint.shapes.tm.Attack = joint.dia.Link.extend({
     defaults: joint.util.deepSupplement({
         type: 'tm.Attack',
         attrs: {
-            '.marker-vertices': { display : 'none' },
-            '.marker-arrowheads': { display: 'none' },
-            '.connection-wrap': { display: 'none' },
-            '.connection': { 'stroke-width': 1},
-            '.marker-target': { d: 'M 15 0 L 0 8 15 15 Z' }
+            '.marker-target': { d: 'M 15 0 L 0 8 15 15 Z' },
+            '.connection': { 'stroke-width': 3},
         }
     }, joint.dia.Link.prototype.defaults)
 });

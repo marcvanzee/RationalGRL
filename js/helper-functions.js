@@ -125,6 +125,7 @@ function isLink(type) {
 }
 
 function getType(graphElement) {
+    if (!graphElement || !graphElement.attributes) return ElementType.UNKNOWN;
     switch (graphElement.attributes.type) {
         case 'tm.Contribution': return ElementType.CONTRIBUTION;
         case 'tm.Decomposition': return ElementType.DECOMPOSITION;
@@ -321,4 +322,20 @@ function showArgumentDetails() {
         questionHtml.html(question.question + ' (' + question.name + ')');
     } 
     showDetailsDiv(ARGUMENT_DETAILS_DIV);
+}
+
+function showLinkDetails() {
+    showDetailsDiv(LINK_DETAILS_DIV);
+}
+
+function defaultLinkMarkup() {
+    return [
+            '<path class="connection" stroke="black" d="M 0 0 0 0"/>',
+            '<path class="marker-source" fill="black" stroke="black" d="M 0 0 0 0"/>',
+            '<path class="marker-target" fill="black" stroke="black" d="M 0 0 0 0"/>',
+            '<path class="connection-wrap" d="M 0 0 0 0"/>',
+            '<g class="labels"/>',
+            '<g class="marker-vertices"/>',
+            '<g class="link-tools"/>'
+        ].join('')
 }

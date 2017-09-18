@@ -41,17 +41,19 @@ Paper.on('blank:pointerup', function(e, x, y) {
     if (type == ElementType.UNKNOWN) {
         console.log('Cannot add element: unknown insert operation.');
     } else {
-        addNewElementAt(x, y, type, type);
+        ELEMENT_DETAILS = rationalGrlModel.getElement(addNewElementAt(x, y, type, type).id);
+        showElementDetails();
         resetState();
     }
 });
 
-Paper.on('cell:pointerdblclick', function(cellView, evt, x, y) {
+Paper.on('cell:pointerclick', function(cellView, evt, x, y) {
     const id = cellView.model.id;
     ELEMENT_DETAILS = rationalGrlModel.elementIdMap[id];
-    if (rationalGrlModel.getType(id) == ElementType.ARGUMENT) {
+    const type = rationalGrlModel.getType(id);
+    if (type == ElementType.ARGUMENT) {
         showArgumentDetails();
-    } else {
+    } else if (isElement(type)) {
         showElementDetails();
     }
 });
@@ -74,9 +76,11 @@ Paper.on('cell:pointerdown', function(cellView, evt, x, y) {
     const link = createLink(insertTypeToLinkType(CUR_INSERT_OPERATION));
     link.set({
                 'source': { id: cellView.model.id },
-                'target': { x: x, y: y }
+                'target': { x: x, y: y },
             })
             .addTo(Paper.model);
+
+
 
     var linkView = link.findView(this);
 
@@ -123,19 +127,35 @@ Paper.on('cell:pointerup', function(cellView, evt, x, y) {
         _this.resetState();
         return;
     }
-    if (CUR_INSERT_OPERATION == CUR_INSERT_OPERATION.DECOMPOSITION &&
-        !hasDecomposition(sourceView.model)) {
-         sourceView.setDecomposition('and');
-    }
+    
     sourceView.options.interactive = true;
 
-    LINE_TO_DRAG.set({
-            'target': { id: targetView.model.id }
-    });
-    rationalGrlModel.addLink(LINE_TO_DRAG.id, CUR_INSERT_OPERATION, sourceView.id, targetView.id, LINE_TO_DRAG);
-    LINE_TO_DRAG = null; // don't delete it
+    const sourceId = sourceView.model.id;
+    const targetId = targetView.model.id;
+    const link = createLink(insertTypeToLinkType(CUR_INSERT_OPERATION));
+    link.set({
+                source: { id: sourceId },
+                target: { id: targetId },
+                'connector': { name: 'rounded', args: { radius: 10 }}
+
+            })
+            .addTo(Paper.model);
+
+    Graph.addCells([link]);
+    rationalGrlModel.addLink(link.id, CUR_INSERT_OPERATION, sourceId, targetId, link);
+    LINK_DETAILS = rationalGrlModel.getLink(link.id);
+    showLinkDetails();
+    LINE_TO_DRAG.remove();
+    LINE_TO_DRAG = null;
     resetState();
 });
+
+Paper.on('link:pointerdown', function(cellView, evt) {
+    if (cellView.model.isLink()) {
+        showLinkDetails();
+    }
+})
+
 
 Paper.on('cell:pointermove', function (cellView, evt, x, y) {
     const bbox = cellView.getBBox();

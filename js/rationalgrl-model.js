@@ -248,7 +248,7 @@ class RationalGRLModel {
           link.decompositionType = map[fromId][0].decompositionType;
         } else {
           // initialize the decomposition description of the graph element.
-          this.getView(link.id).setDecomposition('and');
+          this.getView(fromId).setDecomposition('and');
         }
         break;
       case LinkType.DEPENDENCY:
@@ -307,6 +307,14 @@ class RationalGRLModel {
 
   getCriticalQuestionForArgument(id) {
     return this.argumentIdToCriticalQuestionMap[id];
+  }
+
+  getElement(id) {
+    return this.elementIdMap[id];
+  }
+
+  getLink(id) {
+    return this.linkIdMap[id];
   }
 }
 

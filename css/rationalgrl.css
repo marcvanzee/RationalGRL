@@ -86,6 +86,11 @@ input.explanation {
   width: 350px;
 }
 
+/* Link details pane */
+.link-details-container {
+  display: none;
+}
+
 /* Toolbar of individual elements */
 .element-tools {
   display: none;

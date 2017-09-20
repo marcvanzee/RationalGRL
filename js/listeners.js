@@ -21,6 +21,14 @@ $('#dependency').on('click', function(e){ CUR_INSERT_OPERATION = InsertOperation
 $('#attack').on('click', function(e){ CUR_INSERT_OPERATION = InsertOperation.ATTACK; });
 
 Graph.on('remove', function(cell, collection, opt) {
+    const id = cell.id;
+    const type = rationalGrlModel.getType(id);
+    if (isElement(type)) {
+        rationalGrlModel.removeElement(id);
+    } else if (isLink(type)) {
+        rationalGrlModel.removeLink(id);
+    }
+
     if (cell instanceof joint.shapes.tm.Decomposition) {
       _.each(Graph.getElements(), function(el) {
         if (el instanceof joint.shapes.basic.Generic) {
@@ -42,7 +50,11 @@ Paper.on('blank:pointerup', function(e, x, y) {
         console.log('Cannot add element: unknown insert operation.');
     } else {
         ELEMENT_DETAILS = rationalGrlModel.getElement(addNewElementAt(x, y, type, type).id);
-        showElementDetails();
+        if (type == ElementType.ARGUMENT) {
+            showArgumentDetails();
+        } else {
+            showElementDetails();
+        }
         resetState();
     }
 });
@@ -144,14 +156,15 @@ Paper.on('cell:pointerup', function(cellView, evt, x, y) {
     Graph.addCells([link]);
     rationalGrlModel.addLink(link.id, CUR_INSERT_OPERATION, sourceId, targetId, link);
     LINK_DETAILS = rationalGrlModel.getLink(link.id);
-    showLinkDetails();
     LINE_TO_DRAG.remove();
     LINE_TO_DRAG = null;
+    showLinkDetails();
     resetState();
 });
 
 Paper.on('link:pointerdown', function(cellView, evt) {
     if (cellView.model.isLink()) {
+        LINK_DETAILS = rationalGrlModel.getLink(cellView.model.id);
         showLinkDetails();
     }
 })
@@ -228,4 +241,17 @@ $(ARGUMENT_DETAILS_DIV).on("click", ".save-button", function() {
     argument.explanation = container.find('.explanation').val();
 
     rationalGrlModel.rename(argument.id, container.find('.name').val());
+});
+
+$('.decomposition-type-selector').on("change", function() {
+    if (!this.value) return;
+    LINK_DETAILS.decompositionType = DecompositionType[this.value];
+    rationalGrlModel.changeDecompositionTypeOf(LINK_DETAILS.id, this.value);
+});
+
+$('.contribution-value-selector').on("change", function() {
+    if (!this.value) return;
+    LINK_DETAILS.contributionValue = ContributionValue[this.value];
+    console.log(rationalGrlModel.getView(LINK_DETAILS.id));
+    rationalGrlModel.getView(LINK_DETAILS.id).model.prop('labels/0/attrs/text/text', LINK_DETAILS.contributionValue);
 });

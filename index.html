@@ -16,6 +16,7 @@
 </head>
 <body>
 
+<div class="outer-container">
 <div id="rationalgrl">
   <div id="sidebar">
     Elements<br>
@@ -53,10 +54,6 @@
     <tr>
       <td class="table-key">Naming history</td>
       <td class="table-value"><div class="naming-history"></div></td>
-    </tr>
-    <tr>
-      <td class="table-key">Notes</td>
-      <td class="table-value"><div class="element-notes"></div></td>
     </tr>
   </table>
 </div>
@@ -107,10 +104,46 @@
 <div class="link-details-container">
   <table class="link-table">
     <thead>
-      <tr><td colspan=2>Link Details</td></tr>
+      <tr><td colspan=2 class="title"></td></tr>
     </thead>
+      <tr>
+        <td class="table-key">Source</td>
+        <td class="table-value"><div class="source"></div></td>
+      </tr>
+      <tr>
+        <td class="table-key">Target</td>
+        <td class="table-value"><div class="target"></div></td>
+      </tr>
+      <tr class="decomposition-type-row">
+        <td class="table-key">Decomposition type</td>
+        <td class="table-value">
+          <select class="decomposition-type-selector">
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+            <option value="XOR">XOR</option>
+          </select>
+        </td>
+      </tr>
+      <tr class="contribution-value-row">
+        <td class="table-key">Contribution value</td>
+        <td class="table-value">
+          <select class="contribution-value-selector">
+            <option value="BREAK">Break (---)</option>
+            <option value="SOME_NEGATIVE">Some negative (--)</option>
+            <option value="HURT">Hurt (-)</option>
+            <option value="UNKNOWN">Unknown</option>
+            <option value="HELP">Help (+)</option>
+            <option value="SOME_POSITIVE">Some positive (++)</option>
+            <option value="MAKE">Make (+++)</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
+      <td class="table-key">Critical questions</td>
+      <td class="table-value"><div class="critical-questions"></div></td>
+    </tr>
   </table>
-  (TODO)
+</div>
 </div>
 </div>
 

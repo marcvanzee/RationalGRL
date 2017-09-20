@@ -2,6 +2,10 @@
  * Helper functions
  */
 
+function getKeyByValue(object, value) {
+  return Object.keys(object).find(key => object[key] === value);
+}
+
 function currentlyAddingIE() {
     const insertOp = CUR_INSERT_OPERATION;
     return insertOp == InsertOperation.SOFTGOAL ||
@@ -113,7 +117,7 @@ function isArgument(type) {
 }
 
 function isElement(type) { 
-    return Object.values(ElementType).indexOf(type) > -1;
+    return Object.values(ElementType).indexOf(type) > -1 && type != ElementType.UNKNOWN;
 }
 
 function isAttack(type) {
@@ -121,16 +125,16 @@ function isAttack(type) {
 }
 
 function isLink(type) { 
-    return Object.values(LinkType).indexOf(type) > -1;
+    return Object.values(LinkType).indexOf(type) > -1 && LinkType.UNKNOWN;
 }
 
 function getType(graphElement) {
     if (!graphElement || !graphElement.attributes) return ElementType.UNKNOWN;
     switch (graphElement.attributes.type) {
-        case 'tm.Contribution': return ElementType.CONTRIBUTION;
-        case 'tm.Decomposition': return ElementType.DECOMPOSITION;
-        case 'tm.Dependency': return ElementType.DEPENDENCY;
-        case 'tm.Attack': return ElementType.ATTACK;
+        case 'tm.Contribution': return LinkType.CONTRIBUTION;
+        case 'tm.Decomposition': return LinkType.DECOMPOSITION;
+        case 'tm.Dependency': return LinkType.DEPENDENCY;
+        case 'tm.Attack': return LinkType.ATTACK;
         case 'tm.Softgoal': return ElementType.SOFTGOAL;
         case 'tm.Goal': return ElementType.GOAL;
         case 'tm.Task': return ElementType.TASK;
@@ -325,6 +329,30 @@ function showArgumentDetails() {
 }
 
 function showLinkDetails() {
+    if (!LINK_DETAILS) {
+        console.error("Cannot show link details: no link selected");
+    }
+    const link = LINK_DETAILS;
+    const detailsPane = $(LINK_DETAILS_DIV);
+    const decompTypeClass = '.decomposition-type-row';
+    const contrClass = '.contribution-value-row';
+    detailsPane.find('.title').html('Link details (' + link.type + ')');
+    detailsPane.find('.source').html(rationalGrlModel.getElement(link.fromId).getName());
+    detailsPane.find('.target').html(rationalGrlModel.getElement(link.toId).getName());
+    detailsPane.find(contrClass).hide();
+    detailsPane.find(decompTypeClass).hide();
+    switch (link.type) {
+      case LinkType.CONTRIBUTION:
+        const contrKey = getKeyByValue(ContributionValue, link.contributionValue);
+        $('.contribution-value-selector').val(contrKey).change();
+        detailsPane.find(contrClass).show();
+        break;
+      case LinkType.DECOMPOSITION:
+        const decompKey = getKeyByValue(DecompositionType, link.decompositionType);
+        $('.decomposition-type-selector').val(decompKey).change();
+        detailsPane.find(decompTypeClass).show();
+        break;
+    }
     showDetailsDiv(LINK_DETAILS_DIV);
 }
 

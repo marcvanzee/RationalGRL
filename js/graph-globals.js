@@ -4,8 +4,8 @@
 
 // Constants.
 const _this = this;
-const HEIGHT = 400;
-const WIDTH = 900;
+const HEIGHT = screen.height - 400;
+const WIDTH = screen.width - 115;
 const GRID_SIZE = 1;
 
 const InsertOperation = {

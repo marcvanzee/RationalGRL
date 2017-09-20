@@ -4,6 +4,10 @@ body {
 }
 
 /* Main structural elements. */
+.outer-container {
+  width: 100vw;
+  heigth: 100vh;
+}
 #rationalgrl {
   margin: auto;
   padding: 0px;
@@ -42,6 +46,7 @@ h3 {
   height: 200px;
   overflow: hidden;
   padding: 5px;
+  bottom: 0;;
 }
 
 thead {

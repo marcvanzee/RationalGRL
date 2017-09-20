@@ -124,6 +124,7 @@ class IELink {
     this.acceptStatus = ElementAcceptStatus.ACCEPTED;
     this.decompositionType = DecompositionType.AND;
     this.contributionValue = ContributionValue.HELP;
+    this.notes = '';
   }
 }
 
@@ -134,6 +135,7 @@ class Argument {
     this.acceptStatus = ElementAcceptStatus.ACCEPTED;
     this.explanation = '';
   }
+  getName() { return this.name; }
 }
 
 class AttackLink {
@@ -148,15 +150,15 @@ class RationalGRLModel {
   constructor() {
     this.elementIdMap = {};
     this.linkIdMap = {};
-    // Map containing elementId -> [dependencyLinkId] elements.
+    // Map containing elementId -> [dependencyLink] elements.
     this.dependencyMap = {};
-    // Map containing elementId -> [contributionLinkId] elements.
+    // Map containing elementId -> [contributionLink] elements.
     this.contributionMap = {};
-    // Map containing elementId -> [decompositionLinkId] elements.
+    // Map containing elementId -> [decompositionLink] elements.
     // Note that all decomposition links for a single element should
     // be of the same type.
     this.decompositionMap = {};
-    // Map containg elementId -> [attacLinkId] elements.
+    // Map containg elementId -> [attacLink] elements.
     this.attackMap = {};
     // Map from any element's id to its graph element.
     this.graphElementMap = {};
@@ -217,6 +219,27 @@ class RationalGRLModel {
     delete this.graphElementMap[id];
   }
 
+  // Remove link and empties decompostion text if the link is a decomposition
+  // and not further decompositions exist to the same element.
+  removeLink(id) {
+    for (const map of this.allLinksMaps) {
+      for (const key of Object.keys(map)) {
+        // Loop backwards so we can remove from array while iterating.
+        let i = map[key].length;
+        while (i--) {
+          const link = map[key][i];
+          if (link.id == id) {
+            map[key].splice(i,1);
+          } 
+        }
+        // If all elements are removed, remove the entry from the map.
+        if (!map[key].length) delete map[key];
+      }
+    }
+    delete this.linkIdMap[id];
+    delete this.graphElementMap[id];
+  }
+
   addLink(id, insertType, fromId, toId, graphLink) {
     const type = insertTypeToLinkType(insertType);
     if (type == LinkType.UNKNOWN) {
@@ -227,6 +250,9 @@ class RationalGRLModel {
         new AttackLink(id, fromId, toId)
       : new IELink(id, type, fromId, toId);
       this.linkIdMap[id] = link;
+    if (this.decompositionMap[link.fromId] && this.decompositionMap[link.fromId].length) {
+      link.decompositionType = this.decompositionMap[link.fromId][0].decompositionType;
+    }
     this.insertLinkToMaps(link, type, graphLink);
   }
 
@@ -315,6 +341,17 @@ class RationalGRLModel {
 
   getLink(id) {
     return this.linkIdMap[id];
+  }
+
+  changeDecompositionTypeOf(id, decompositionType) {
+    for (const key of Object.keys(this.decompositionMap)) {
+      const links = this.decompositionMap[key];
+      if (!links.some(link => link.id == id)) continue;
+      for (const link of links) {
+        link.decompositionType = DecompositionType[decompositionType];
+      }
+      this.getView(key).setDecomposition(decompositionType.toLowerCase());
+    }
   }
 }
 

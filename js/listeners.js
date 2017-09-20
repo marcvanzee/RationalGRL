@@ -252,6 +252,5 @@ $('.decomposition-type-selector').on("change", function() {
 $('.contribution-value-selector').on("change", function() {
     if (!this.value) return;
     LINK_DETAILS.contributionValue = ContributionValue[this.value];
-    console.log(rationalGrlModel.getView(LINK_DETAILS.id));
     rationalGrlModel.getView(LINK_DETAILS.id).model.prop('labels/0/attrs/text/text', LINK_DETAILS.contributionValue);
 });

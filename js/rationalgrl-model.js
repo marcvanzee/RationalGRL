@@ -143,6 +143,7 @@ class AttackLink {
     this.id = id;
     this.fromId = fromId;
     this.toId = toId;
+    this.type = LinkType.ATTACK;
   }
 }
 

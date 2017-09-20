@@ -337,6 +337,7 @@ function showLinkDetails() {
     const decompTypeClass = '.decomposition-type-row';
     const contrClass = '.contribution-value-row';
     detailsPane.find('.title').html('Link details (' + link.type + ')');
+    console.log(link);
     detailsPane.find('.source').html(rationalGrlModel.getElement(link.fromId).getName());
     detailsPane.find('.target').html(rationalGrlModel.getElement(link.toId).getName());
     detailsPane.find(contrClass).hide();

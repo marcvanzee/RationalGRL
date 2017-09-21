@@ -40,16 +40,19 @@ const ElementAcceptStatus = {
 const CriticalQuestionEffect = {
   INTRO_SOURCE: 'Intro Source',
   INTRO_DEST: 'Intro Dest',
+  INTRO_LINK: 'Intro Link',
   DISABLE: 'Disable',
-}
+};
 
 class CriticalQuestion {
-  constructor(name, question, answer, applicableTo, effect) {
+  constructor(name, question, answerApply, answerDontApply, applicableTo, effect) {
     this.name = name;
     this.question = question;
     this.applicableTo = applicableTo;
     this.effect = effect;
-    this.answer = answer;
+    this.answerApply = answerApply;
+    this.answerDontApply = answerDontApply;
+    this.appliedAnswer = null;
     this.explanation = '';
   }
 }
@@ -79,7 +82,10 @@ class CriticalQuestionsDatabase {
     }
   }
   getQuestionsForType(type) {
-    return this.iEelementToQuestionMap[type];
+    if (isElement(type)) return this.iEelementToQuestionMap[type];
+    if (isLink(type)) return this.iElinkToQuestionMap[type];
+    console.error("Cannot get critical questions for unknown type: " + type);
+    return [];
   }
   getQuestionByName(name) {
     return this.questionByName[name];
@@ -88,17 +94,39 @@ class CriticalQuestionsDatabase {
 
 const questionsDatabase = new CriticalQuestionsDatabase();
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ1", "Is the resource available?", "No",
+  new CriticalQuestion("CQ1", "Is the resource available?", "No", "Yes",
           [ElementType.RESOURCE], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ2a", "Is the task possible?", "No",
+  new CriticalQuestion("CQ2a", "Is the task possible?", "No", "Yes",
           [ElementType.TASK], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ3", "Can the goal be realized?", "No",
+  new CriticalQuestion("CQ2b", "Does the task contribute negatively to some softgoal?", "Yes", "No",
+          [ElementType.TASK], CriticalQuestionEffect.INTRO_LINK));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQ3", "Can the goal be realized?", "No", "Yes",
           [ElementType.GOAL], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ4", "Is the softgoal legitimate?", "No",
+  new CriticalQuestion("CQ4", "Is the softgoal legitimate?", "No", "Yes",
           [ElementType.SOFTGOAL], CriticalQuestionEffect.DISABLE));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQIntroSrcContr", "Are there alternative #1s that contribute to the same #2?", "Yes", "No",
+          [LinkType.CONTRIBUTION], CriticalQuestionEffect.INTRO_SOURCE));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQIntroDestContr", "Does the #1 contribute to other #2s?", "Yes", "No",
+          [LinkType.CONTRIBUTION], CriticalQuestionEffect.INTRO_DEST));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQIntroSrcDecomp", "Does the #2 decompose into other #1s?", "Yes", "No",
+          [LinkType.DECOMPOSITION], CriticalQuestionEffect.INTRO_SOURCE));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQIntroDestDecomp", "Does the #1 contribute to other #2s?", "Yes", "No",
+          [LinkType.DECOMPOSITION], CriticalQuestionEffect.INTRO_DEST));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQ11", "Is the #1 relevant/useful?", "No", "Yes",
+          [ElementType.SOFTGOAL, ElementType.GOAL, ElementType.TASK, ElementType.RESOURCE],
+          CriticalQuestionEffect.DISABLE));
+
+
+
 
 class IEElement {
   constructor(id, type, name) {
@@ -125,6 +153,10 @@ class IELink {
     this.decompositionType = DecompositionType.AND;
     this.contributionValue = ContributionValue.HELP;
     this.notes = '';
+  }
+
+  getName() { 
+    return this.type;
   }
 }
 
@@ -300,7 +332,8 @@ class RationalGRLModel {
     Paper.findViewByModel(graphElement).setLabel(newName);
   }
 
-  answerQuestion(id, question) {
+  answerQuestion(id, question, answer) {
+    question.appliedAnswer = answer;
     const map = this.elementIdToAnsweredQuestionsMap;
     if (!map[id] || !map[id].length) map[id] = [question];
     else map[id].push(question);
@@ -310,8 +343,9 @@ class RationalGRLModel {
     return Paper.findViewByModel(this.graphElementMap[id]);
   }
 
-  elementHasAnswer(id, name) {
+  elementHasAnswer(id, name, answer) {
     return (this.elementIdToAnsweredQuestionsMap[id] || [])
+        .filter(question => !answer || question.appliedAnswer == answer)
         .map(question => question.name)
         .indexOf(name) != -1;
   }

@@ -217,7 +217,7 @@ $(ELEMENT_DETAILS_DIV).on("click", ".critical-question-button", function() {
     // Create a new critical question and store it in a global variable, but don't assign
     // it to the element yet. Only do this once the question has been answered.
     // Don't create a new one if an answer exists already.
-    const name = $('.element-details-container .critical-question-button').attr('name');
+    const name = this.getAttribute('name');
     if (rationalGrlModel.elementHasAnswer(ELEMENT_DETAILS.id, name)) {
         CRITICAL_QUESTION_DETAILS = rationalGrlModel.getAnswer(ELEMENT_DETAILS.id, name);
     } else {
@@ -227,13 +227,34 @@ $(ELEMENT_DETAILS_DIV).on("click", ".critical-question-button", function() {
     showCriticalQuestionDetails();
 });
 
-$(QUESTION_DETAILS_DIV).on("click", ".answer-button", function() {
-    // If the question has already been answered, only update the explanation.
-    if (rationalGrlModel.elementHasAnswer(ELEMENT_DETAILS.id, CRITICAL_QUESTION_DETAILS.name)) {
-        CRITICAL_QUESTION_DETAILS.explanation = $('.question-details-container .explanation-input').val();
+$(LINK_DETAILS_DIV).on("click", ".critical-question-button", function() {
+    // Create a new critical question and store it in a global variable, but don't assign
+    // it to the element yet. Only do this once the question has been answered.
+    // Don't create a new one if an answer exists already.
+    const name = this.getAttribute('name');
+    if (rationalGrlModel.elementHasAnswer(LINK_DETAILS.id, name)) {
+        CRITICAL_QUESTION_DETAILS = rationalGrlModel.getAnswer(LINK_DETAILS.id, name);
+    } else {
+        CRITICAL_QUESTION_DETAILS = jQuery.extend(true, {}, 
+            questionsDatabase.getQuestionByName(name));
     }
-    answerCriticalQuestion();
-})
+    showCriticalQuestionDetails();
+});
+
+$(QUESTION_DETAILS_DIV).on("click", ".answer-button", function() {
+    // If the question has already been answered with the same answer, only update explanation.
+    const curDiv = $(QUESTION_DETAILS_DIV);
+    const element = ELEMENT_DETAILS || LINK_DETAILS;
+    const cq = CRITICAL_QUESTION_DETAILS;
+    const answer = curDiv.find('.answer-selector option:selected').text(); 
+    const explanation = curDiv.find('.explanation-input').val()
+
+    if (rationalGrlModel.elementHasAnswer(element.id, cq.name, answer)) {
+        cq.explanation = explanation;
+    }  else {
+        answerCriticalQuestion(element, cq, answer, explanation);
+    }
+});
 
 $(ARGUMENT_DETAILS_DIV).on("click", ".save-button", function() {
     const argument = ELEMENT_DETAILS;

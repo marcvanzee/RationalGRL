@@ -170,6 +170,7 @@ function showElementDetails() {
         console.error("Cannot show element details: No element selected");
         return;
     }
+    LINK_DETAILS = null;
     const element = ELEMENT_DETAILS;
     const detailsPane = $(ELEMENT_DETAILS_DIV);
     detailsPane.find('.element-name-input').val(element.getName());
@@ -177,12 +178,15 @@ function showElementDetails() {
     let criticalQuestionHtml = '';
     for (const question of questionsDatabase.getQuestionsForType(element.type)) {
         const name = question.name;
+        const questionReplaced = replaceQuestionForElement(question.question, element);
         if (rationalGrlModel.elementHasAnswer(element.id, name)) {
-            criticalQuestionHtml += '' + question.question + 
-                ' <strong> (Answered)</strong> <button type="button" class="critical-question-button" name="' + 
+            const answer = rationalGrlModel.getAnswer(element.id, name).appliedAnswer;
+
+            criticalQuestionHtml += '' + questionReplaced + 
+                ' <strong> (Answer: ' + answer + ')</strong> <button type="button" class="critical-question-button" name="' + 
                 question.name + '">View existing answer</button><br>';
         } else {
-            criticalQuestionHtml += '' + question.question + 
+            criticalQuestionHtml += '' + questionReplaced + 
                 ' <button type="button" class="critical-question-button" name="' + 
                 question.name + '">Answer</button><br>';
         }
@@ -208,43 +212,51 @@ function setNamingHistoryDiv(element) {
 }
 
 function showCriticalQuestionDetails() {
-    if (!ELEMENT_DETAILS || !CRITICAL_QUESTION_DETAILS) {
+    if ((!ELEMENT_DETAILS && !LINK_DETAILS) || !CRITICAL_QUESTION_DETAILS) {
         console.error("Cannot show critical question details: No element or question selected");
         return;
     }
-    const element = ELEMENT_DETAILS;
     const question = CRITICAL_QUESTION_DETAILS;
+    let element = ELEMENT_DETAILS ? ELEMENT_DETAILS : LINK_DETAILS;
+    let questionReplaced = isLink(element.type) ? 
+                        replaceQuestionForLink(question.question, element)
+                       : replaceQuestionForElement(question.question, element);
     const detailsPane = $('.question-details-container');
     detailsPane.find('.element-name').html(element.getName());
-    detailsPane.find('.critical-question').html(question.question);
-    detailsPane.find('.answer').html(question.answer);
+    detailsPane.find('.critical-question').html(questionReplaced);
+    detailsPane.find('.answer-selector option[value="answer-apply"]').text(question.answerApply);
+    detailsPane.find('.answer-selector option[value="answer-dont-apply"]').html(question.answerDontApply);
     detailsPane.find('.explanation-input').val(question.explanation);
+    detailsPane.find('.answer-button').html(question.appliedAnswer ? "Update answer" : "Answer question");
     showDetailsDiv(QUESTION_DETAILS_DIV);
 }
 
-function answerCriticalQuestion() {
-    if (!ELEMENT_DETAILS || !CRITICAL_QUESTION_DETAILS) {
+function answerCriticalQuestion(element, question, answer, explanation) {
+    if ((!ELEMENT_DETAILS && !LINK_DETAILS) || !CRITICAL_QUESTION_DETAILS) {
         console.error("Cannot answer critical question: No element or question selected");
         return;
     }
-    const element = ELEMENT_DETAILS;
-    const question = CRITICAL_QUESTION_DETAILS;
-    question.explanation = $('.question-details-container .explanation-input').val();
-    rationalGrlModel.answerQuestion(element.id, question);
+    if (question.appliedAnswer == answer) return;
 
-    switch (question.effect) {
-        case CriticalQuestionEffect.DISABLE:
-          applyDisableEffect();
-          break;
-        case CriticalQuestionEffect.INTRO_SOURCE:
-          console.error("Intro source effect is not yet supported");
-          break;
-        case CriticalQuestionEffect.INTRO_DEST:
-          console.error("Intro dest effect is not yet supported");
-          break;
+    question.explanation = explanation;
+    rationalGrlModel.answerQuestion(element.id, question, answer);
+
+    if (answer != question.answerDontApply &&!LINK_DETAILS) {
+        switch (question.effect) {
+            case CriticalQuestionEffect.DISABLE:
+              applyDisableEffect();
+              break;
+            case CriticalQuestionEffect.INTRO_SOURCE:
+              console.error("Intro source effect is not yet supported");
+              break;
+            case CriticalQuestionEffect.INTRO_DEST:
+              console.error("Intro dest effect is not yet supported");
+              break;
+        }
     }
     CRITICAL_QUESTION_DETAILS = null;
-    showElementDetails();
+    if (ELEMENT_DETAILS) showElementDetails();
+    else showLinkDetails();
 }
 
 function applyDisableEffect() {
@@ -312,6 +324,7 @@ function showArgumentDetails() {
         console.error("Cannot show argument details: No element selected");
         return;
     }
+    LINK_DETAILS = null;
     const argument = ELEMENT_DETAILS;
     const detailsPane = $(ARGUMENT_DETAILS_DIV);
     detailsPane.find('.name').val(argument.name);
@@ -332,12 +345,12 @@ function showLinkDetails() {
     if (!LINK_DETAILS) {
         console.error("Cannot show link details: no link selected");
     }
+    ELEMENT_DETAILS = null;
     const link = LINK_DETAILS;
     const detailsPane = $(LINK_DETAILS_DIV);
     const decompTypeClass = '.decomposition-type-row';
     const contrClass = '.contribution-value-row';
     detailsPane.find('.title').html('Link details (' + link.type + ')');
-    console.log(link);
     detailsPane.find('.source').html(rationalGrlModel.getElement(link.fromId).getName());
     detailsPane.find('.target').html(rationalGrlModel.getElement(link.toId).getName());
     detailsPane.find(contrClass).hide();
@@ -354,6 +367,26 @@ function showLinkDetails() {
         detailsPane.find(decompTypeClass).show();
         break;
     }
+    let criticalQuestionHtml = '';
+    for (const question of questionsDatabase.getQuestionsForType(link.type)) {
+        const name = question.name;
+        const srcType = rationalGrlModel.getElement(link.fromId).type.toLowerCase();
+        const destType = rationalGrlModel.getElement(link.toId).type.toLowerCase();
+        const questionReplaced = question.question.replace("#1", srcType).replace("#2", destType);
+        if (rationalGrlModel.elementHasAnswer(link.id, name)) {
+            const answer = rationalGrlModel.getAnswer(link.id, name).appliedAnswer;
+
+            criticalQuestionHtml += '' + questionReplaced + 
+                ' <strong> (Answer: ' + answer + ')</strong> <button type="button" class="critical-question-button" name="' + 
+                question.name + '">View existing answer</button><br>';
+        } else {
+            criticalQuestionHtml += '' + questionReplaced + 
+                ' <button type="button" class="critical-question-button" name="' + 
+                question.name + '">Answer</button><br>';
+        }
+    }
+    detailsPane.find('.critical-questions').html(criticalQuestionHtml || 'No questions found');
+
     showDetailsDiv(LINK_DETAILS_DIV);
 }
 
@@ -367,4 +400,22 @@ function defaultLinkMarkup() {
             '<g class="marker-vertices"/>',
             '<g class="link-tools"/>'
         ].join('')
+}
+
+function replaceQuestionForLink(str, link) {
+  if (!isLink(link.type)) {
+    console.error("Cannot replace question for link: ", link, "is not a link");
+    return '';
+  }
+  const srcType = rationalGrlModel.getElement(link.fromId).type.toLowerCase();
+  const destType = rationalGrlModel.getElement(link.toId).type.toLowerCase();
+  return str.replace("#1", srcType).replace("#2", destType);
+}
+
+function replaceQuestionForElement(str, element) {
+  if (!isElement(element.type)) {
+    console.error("Cannot replace question for element: ", element, "is not an element");
+    return '';
+  }
+  return str.replace("#1", element.type.toLowerCase());
 }

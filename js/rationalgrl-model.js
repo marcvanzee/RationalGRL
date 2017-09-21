@@ -65,10 +65,12 @@ class CriticalQuestionsDatabase {
     this.iEelementToQuestionMap[ElementType.GOAL] = [];
     this.iEelementToQuestionMap[ElementType.TASK] = [];
     this.iEelementToQuestionMap[ElementType.RESOURCE] = [];
+    this.iEelementToQuestionMap[ElementType.ARGUMENT] = [];
     this.iElinkToQuestionMap = {};
     this.iElinkToQuestionMap[LinkType.CONTRIBUTION] = [];
     this.iElinkToQuestionMap[LinkType.DECOMPOSITION] = [];
     this.iElinkToQuestionMap[LinkType.DEPENDENCY] = [];
+    this.iElinkToQuestionMap[LinkType.ATTACK] = [];
   }
   addQuestion(question) {
     this.questionByName[question.name] = question;

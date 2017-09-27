@@ -28,16 +28,6 @@ Graph.on('remove', function(cell, collection, opt) {
     } else if (isLink(type)) {
         rationalGrlModel.removeLink(id);
     }
-
-    if (cell instanceof joint.shapes.tm.Decomposition) {
-      _.each(Graph.getElements(), function(el) {
-        if (el instanceof joint.shapes.basic.Generic) {
-            if (!_this.hasDecomposition(el)) {
-                Paper.findViewByModel(el).setDecomposition('');
-            }
-        }
-     });
-    }
 });
 
 Paper.on('blank:pointerup', function(e, x, y) {
@@ -247,12 +237,13 @@ $(QUESTION_DETAILS_DIV).on("click", ".answer-button", function() {
     const element = ELEMENT_DETAILS || LINK_DETAILS;
     const cq = CRITICAL_QUESTION_DETAILS;
     const answer = curDiv.find('.answer-selector option:selected').text(); 
-    const explanation = curDiv.find('.explanation-input').val()
+    const explanation = curDiv.find('.explanation-input').val();
+    const elementName = curDiv.find('.element-input').val();
 
     if (rationalGrlModel.elementHasAnswer(element.id, cq.name, answer)) {
         cq.explanation = explanation;
     }  else {
-        answerCriticalQuestion(element, cq, answer, explanation);
+        answerCriticalQuestion(element, cq, answer, explanation, elementName);
     }
 });
 
@@ -266,8 +257,8 @@ $(ARGUMENT_DETAILS_DIV).on("click", ".save-button", function() {
 
 $('.decomposition-type-selector').on("change", function() {
     if (!this.value) return;
-    LINK_DETAILS.decompositionType = DecompositionType[this.value];
-    rationalGrlModel.changeDecompositionTypeOf(LINK_DETAILS.id, this.value);
+    ELEMENT_DETAILS.decompositionType = DecompositionType[this.value];
+    rationalGrlModel.changeDecompositionTypeOf(ELEMENT_DETAILS.id, this.value);
 });
 
 $('.contribution-value-selector').on("change", function() {

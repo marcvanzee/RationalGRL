@@ -54,6 +54,7 @@ class CriticalQuestion {
     this.answerDontApply = answerDontApply;
     this.appliedAnswer = null;
     this.explanation = '';
+    this.addedElement = null;
   }
 }
 
@@ -136,6 +137,7 @@ class IEElement {
     this.names = [name];
     this.type = type;
     this.acceptStatus = ElementAcceptStatus.ACCEPTED;
+    this.decompositionType = null;
     this.notes = '';
   }
   getName() { 
@@ -152,7 +154,6 @@ class IELink {
     this.toId = toId;
     this.type = type;
     this.acceptStatus = ElementAcceptStatus.ACCEPTED;
-    this.decompositionType = DecompositionType.AND;
     this.contributionValue = ContributionValue.HELP;
     this.notes = '';
   }
@@ -190,8 +191,8 @@ class RationalGRLModel {
     // Map containing elementId -> [contributionLink] elements.
     this.contributionMap = {};
     // Map containing elementId -> [decompositionLink] elements.
-    // Note that all decomposition links for a single element should
-    // be of the same type.
+    // Note that a decomposition link (fromId, toId) means that toId
+    // decomposes into fromId.
     this.decompositionMap = {};
     // Map containg elementId -> [attacLink] elements.
     this.attackMap = {};
@@ -257,6 +258,14 @@ class RationalGRLModel {
   // Remove link and empties decompostion text if the link is a decomposition
   // and not further decompositions exist to the same element.
   removeLink(id) {
+    const decompLink = this.linkIdMap[id];
+    if (decompLink && decompLink.type == LinkType.DECOMPOSITION && 
+        !Object.values(this.decompositionMap).some(link => link.toId == decompLink.toId)) {
+      const element = this.getElement(decompLink.toId);
+      element.decompositionType = null;
+      this.getView(element.id).setDecomposition('');
+
+    }
     for (const map of this.allLinksMaps) {
       for (const key of Object.keys(map)) {
         // Loop backwards so we can remove from array while iterating.
@@ -284,10 +293,8 @@ class RationalGRLModel {
     let link = (type == LinkType.ATTACK) ?
         new AttackLink(id, fromId, toId)
       : new IELink(id, type, fromId, toId);
-      this.linkIdMap[id] = link;
-    if (this.decompositionMap[link.fromId] && this.decompositionMap[link.fromId].length) {
-      link.decompositionType = this.decompositionMap[link.fromId][0].decompositionType;
-    }
+    this.linkIdMap[id] = link;
+    const toElement = this.getElement(link.toId);
     this.insertLinkToMaps(link, type, graphLink);
   }
 
@@ -304,12 +311,10 @@ class RationalGRLModel {
         break;
       case LinkType.DECOMPOSITION:
         map = this.decompositionMap;
-        // Ensure the decomposition type is the same as the existing ones.
-        if (map[fromId] && map[fromId].length) {
-          link.decompositionType = map[fromId][0].decompositionType;
-        } else {
-          // initialize the decomposition description of the graph element.
-          this.getView(fromId).setDecomposition('and');
+        const toElement = this.getElement(link.toId);
+        if (!toElement.decompositionType) {
+          this.getView(link.toId).setDecomposition('and');
+          toElement.decompositionType = DecompositionType.AND;
         }
         break;
       case LinkType.DEPENDENCY:
@@ -334,11 +339,12 @@ class RationalGRLModel {
     Paper.findViewByModel(graphElement).setLabel(newName);
   }
 
-  answerQuestion(id, question, answer) {
+  answerQuestion(id, question, answer, elementName) {
     question.appliedAnswer = answer;
     const map = this.elementIdToAnsweredQuestionsMap;
     if (!map[id] || !map[id].length) map[id] = [question];
     else map[id].push(question);
+    question.addedElement = elementName;
   }
 
   getView(id) {
@@ -381,14 +387,8 @@ class RationalGRLModel {
   }
 
   changeDecompositionTypeOf(id, decompositionType) {
-    for (const key of Object.keys(this.decompositionMap)) {
-      const links = this.decompositionMap[key];
-      if (!links.some(link => link.id == id)) continue;
-      for (const link of links) {
-        link.decompositionType = DecompositionType[decompositionType];
-      }
-      this.getView(key).setDecomposition(decompositionType.toLowerCase());
-    }
+    this.getElement(id).decompositionType = DecompositionType[decompositionType];
+    this.getView(id).setDecomposition(decompositionType.toLowerCase());
   }
 }
 

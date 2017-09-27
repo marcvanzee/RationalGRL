@@ -82,6 +82,14 @@ input.element-name-input {
 input.explanation-input {
   width: 350px;
 }
+div.answer-container {
+  float: left;
+}
+div.element-container {
+  margin-left: 10px;
+  float: left;
+  display: none;
+}
 
 /* Argument details pane */
 .argument-details-container {
@@ -173,7 +181,7 @@ input.explanation {
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 5px;
+    padding: 0px;
     height: 15px;
     vertical-align: top;
     position: absolute;

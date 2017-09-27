@@ -47,6 +47,16 @@
       <td class="table-key">Element type</td>
       <td class="table-value"><div class="element-type"></div></td>
     </tr>
+    <tr class="decomposition-type-row">
+        <td class="table-key">Decomposition type</td>
+        <td class="table-value">
+          <select class="decomposition-type-selector">
+            <option value="AND">AND</option>
+            <option value="OR">OR</option>
+            <option value="XOR">XOR</option>
+          </select>
+        </td>
+      </tr>
     <tr>
       <td class="table-key">Critical questions</td>
       <td class="table-value"><div class="critical-questions"></div></td>
@@ -73,10 +83,15 @@
     <tr>
       <td class="table-key">Answer</td>
       <td class="table-value">
+        <div class="answer-container">
           <select class="answer-selector">
             <option value="answer-apply"></option>
             <option value="answer-dont-apply"></option>
           </select>
+        </div>
+        <div class="element-container">
+          Element name: <input class="element-input">
+        </div>
       </td>
     </tr>
     <tr>
@@ -118,16 +133,6 @@
       <tr>
         <td class="table-key">Target</td>
         <td class="table-value"><div class="target"></div></td>
-      </tr>
-      <tr class="decomposition-type-row">
-        <td class="table-key">Decomposition type</td>
-        <td class="table-value">
-          <select class="decomposition-type-selector">
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
-            <option value="XOR">XOR</option>
-          </select>
-        </td>
       </tr>
       <tr class="contribution-value-row">
         <td class="table-key">Contribution value</td>

@@ -22,20 +22,22 @@ joint.shapes.tm.Softgoal = joint.shapes.basic.Path.extend({
     }, joint.shapes.basic.Path.prototype.defaults)
 });
 
-joint.shapes.tm.Goal = joint.shapes.basic.Circle.extend({
+joint.shapes.tm.Goal = joint.shapes.basic.Rect.extend({
     defaults: joint.util.deepSupplement({
 
         type: 'tm.Goal',
         attrs: {
-            circle: { 
+            rect: { 
                 fill: '#ffffff',
                 stroke: '#000000',
-                r: 30,
-                'stroke-width': 2
+                'stroke-width': 2,
+                rx: 10,
+                ry: 10,
+                transform: "translate(0, 10)",
             },             
         },
-        size: { width: 120, height: 50 }
-    }, joint.shapes.basic.Circle.prototype.defaults)
+        size: { width: 120, height: 40 }
+    }, joint.shapes.basic.Rect.prototype.defaults)
 });
 
 joint.shapes.tm.Task = joint.shapes.basic.Path.extend({
@@ -53,9 +55,10 @@ joint.shapes.tm.Task = joint.shapes.basic.Path.extend({
                 stroke: '#000000',
                 'stroke-width': 2,
                 d: 'M 20 0 L 100 0 120 20 100 40 20 40 0 20 Z',
+                transform: "translate(0, 5)",
             }
         },
-        size: { width: 120, height: 50 }
+        size: { width: 120, height: 40 }
     }, joint.shapes.basic.Path.prototype.defaults)
 });
 
@@ -69,10 +72,10 @@ joint.shapes.tm.Resource = joint.shapes.basic.Rect.extend({
                 fill: '#ffffff',
                 stroke: '#000000',
                 'stroke-width': 2,
-                transform: "translate(5, 5)",
+                transform: "translate(0, 5)",
             },         
         },
-        size: { width: 120, height: 50 }
+        size: { width: 120, height: 40 }
     }, joint.shapes.basic.Rect.prototype.defaults)
 });
 
@@ -91,9 +94,10 @@ joint.shapes.tm.Argument = joint.shapes.basic.Path.extend({
                 stroke: '#000000',
                 'stroke-width': 2,
                 d: 'M 0 0 L 80 0 80 10 90 5 80 20 80 40 0 40 Z',
+                transform: "translate(0, 5)",
             }
         },
-        size: { width: 120, height: 50 }
+        size: { width: 120, height: 40 }
     }, joint.shapes.basic.Path.prototype.defaults)
 });
 
@@ -191,8 +195,8 @@ joint.shapes.tm.Decomposition = joint.dia.Link.extend({
         markup: defaultLinkMarkup(),
         type: 'tm.Decomposition',
         attrs: {
-            '.marker-target': { 
-                d: 'M10.833,13.682,10.833,5.5,5.5,5.5,5.5,25.5,10.833,25.5z',
+            '.marker-source': { 
+                d: 'M 15 0 L 15 15 15 8 0 8 15 8 15 0',
                 'stroke-width': 3 
             },
             '.connection': { 'stroke-width': 3}

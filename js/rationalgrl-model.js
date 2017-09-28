@@ -33,7 +33,7 @@ const ContributionValue = {
 
 const ElementAcceptStatus = {
   ACCEPTED: 'Accepted',
-  REJECT: 'Rejected',
+  REJECTED: 'Rejected',
   UNDECIDED: 'Undecided',
 };
 
@@ -194,7 +194,7 @@ class RationalGRLModel {
     // Note that a decomposition link (fromId, toId) means that toId
     // decomposes into fromId.
     this.decompositionMap = {};
-    // Map containg elementId -> [attacLink] elements.
+    // Map containg elementId -> [attackLink] elements.
     this.attackMap = {};
     // Map from any element's id to its graph element.
     this.graphElementMap = {};
@@ -225,6 +225,7 @@ class RationalGRLModel {
 
   // Remove the element and all connected links (incoming and outgoing).
   removeElement(id) {
+    const isArgument = this.elementIdMap[id].type == ElementType.ARGUMENT;
     delete this.elementIdMap[id];
     let linksToRemove = []; // links to remove.
     for (const map of this.allLinksMaps) {
@@ -253,12 +254,16 @@ class RationalGRLModel {
       }
     }
     delete this.graphElementMap[id];
+    if (isArgument) {
+      this.computeExtension();
+    }
   }
 
   // Remove link and empties decompostion text if the link is a decomposition
   // and not further decompositions exist to the same element.
   removeLink(id) {
     const decompLink = this.linkIdMap[id];
+    const isAttack = decompLink && decompLink.type == LinkType.ATTACK;
     if (decompLink && decompLink.type == LinkType.DECOMPOSITION && 
         !Object.values(this.decompositionMap).some(link => link.toId == decompLink.toId)) {
       const element = this.getElement(decompLink.toId);
@@ -282,20 +287,27 @@ class RationalGRLModel {
     }
     delete this.linkIdMap[id];
     delete this.graphElementMap[id];
+    if (isAttack) {
+      this.computeExtension();
+    }
   }
 
   addLink(id, insertType, fromId, toId, graphLink) {
     const type = insertTypeToLinkType(insertType);
+    const isAttack = type == LinkType.ATTACK;
     if (type == LinkType.UNKNOWN) {
       console.error("Invalid InsertOperation when adding link: ", insertType);
       return;
     }
-    let link = (type == LinkType.ATTACK) ?
+    let link = isAttack ?
         new AttackLink(id, fromId, toId)
       : new IELink(id, type, fromId, toId);
     this.linkIdMap[id] = link;
     const toElement = this.getElement(link.toId);
     this.insertLinkToMaps(link, type, graphLink);
+    if (isAttack) {
+      this.computeExtension();
+    }
   }
 
   insertLinkToMaps(link, type, graphLink) {
@@ -389,6 +401,105 @@ class RationalGRLModel {
   changeDecompositionTypeOf(id, decompositionType) {
     this.getElement(id).decompositionType = DecompositionType[decompositionType];
     this.getView(id).setDecomposition(decompositionType.toLowerCase());
+  }
+  // We simply start from each argument, traverse all possible paths from that
+  // argument and if we encounter the same argument again we have a cycle.
+  hasCycle() {
+    const attackMap = this.attackMap;
+    for (const keyElementId of Object.keys(this.attackMap)) {
+      const visited = [keyElementId];
+      const toProcess = attackMap[keyElementId].map(link => link.toId);
+      while (toProcess.length) {
+        const curElementId = toProcess.splice(toProcess.length-1,1);
+        if (visited.indexOf(curElementId) != -1) return true;
+        const nextElementIds = (attackMap[curElementId] || []).map(link => link.toId);
+        if (nextElementIds.some(id => visited.indexOf(id) != -1)) return true;
+        visited.push(curElementId);
+        if (nextElementIds.length) {
+          toProcess.push.apply(toProcess, nextElementIds);
+        }
+      }
+    }
+    return false;
+  }
+
+  computeExtension() {
+    if (this.hasCycle()) {
+      alert('Argumentation network has cycles. This is currently not supported. Please remove the cycles.');
+      return;
+    }
+    // The algorithm goes as follows: 
+    // 0. set attack status of all arguments to OUT.
+    // 1. start from the unattacked arguments.
+    // 2. for each argument A1, recursively set successor A2 as follows:
+    //    a. If A1 is IN, A2 is OUT
+    //    b. If A1 is OUT 
+    //       b1. If all other attackers of A2 are OUT, A2 is IN
+    //       b2. If some attacker of A2 is IN, A2 is OUT
+    // This process proceeds depth-first.
+
+    // Get attacked elements.
+    const attackMap = this.attackMap;
+    const allLinks = [].concat.apply([], Object.values(attackMap));
+    const unattackedArgumentIds = Object.keys(attackMap).filter(elementId => 
+      !allLinks.some(link => link.toId == elementId));
+    // Set all elements involved in arguments or attacks to OUT.
+    for (const link of allLinks) {
+      this.getElement(link.fromId).acceptStatus = ElementAcceptStatus.REJECTED;
+      this.getElement(link.toId).acceptStatus = ElementAcceptStatus.REJECTED;
+    }
+    // Set all other elements to IN.
+    for (const [id,elem] of Object.entries(this.elementIdMap)) {
+      if (!allLinks.some(link => link.fromId == id || link.toId == id)) {
+        elem.acceptStatus = ElementAcceptStatus.ACCEPTED;
+      }
+    }
+    for (const keyArgumentId of unattackedArgumentIds) {
+      this.getElement(keyArgumentId).acceptStatus = ElementAcceptStatus.ACCEPTED;
+      const toProcess = (attackMap[keyArgumentId] || []).map(link => link.toId);
+      while (toProcess.length) {
+        const curElementId = toProcess.splice(0,1);
+        const curElement = this.getElement(curElementId);
+        if (allLinks.some(link => link.toId == curElementId &&
+          this.getElement(link.fromId).acceptStatus == ElementAcceptStatus.ACCEPTED)) {
+          curElement.acceptStatus = ElementAcceptStatus.REJECTED;
+        } else {
+          curElement.acceptStatus = ElementAcceptStatus.ACCEPTED;
+        }
+        const nextElements = attackMap[curElementId];
+        if (nextElements && nextElements.length) {
+          toProcess.push.apply(toProcess, nextElements.map(link => link.toId));
+        }
+      }
+    }
+    this.setElementsColor();
+  }
+
+  setElementsColor() {
+    for (const [id,elem] of Object.entries(this.elementIdMap)) {
+      const view = this.getView(id);
+      const isAccepted = elem.acceptStatus == ElementAcceptStatus.ACCEPTED;
+      view.model.attr('path/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      view.model.attr('rect/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      if (isAccepted) {
+        view.enable();
+      } else {
+        view.disable();
+      }
+    }
+    for (const [id,link] of Object.entries(this.linkIdMap)) {
+      if (link.type == LinkType.ATTACK) continue; // don't disable attack links
+      const view = this.getView(id);
+      const isAccepted = this.getElement(link.fromId).acceptStatus == ElementAcceptStatus.ACCEPTED &&
+                          this.getElement(link.toId).acceptStatus == ElementAcceptStatus.ACCEPTED;
+      view.model.attr('.marker-target/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      view.model.attr('.marker-target/fill', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      view.model.attr('.marker-source/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      view.model.attr('.connection/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      if (link.type == LinkType.CONTRIBUTION) {
+        view.model.prop('labels/0/attrs/text/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      }
+    }
   }
 }
 

@@ -49,3 +49,6 @@ let ELEMENT_DETAILS_DIV = '.element-details-container';
 let QUESTION_DETAILS_DIV = '.question-details-container';
 let LINK_DETAILS_DIV = '.link-details-container';
 let ARGUMENT_DETAILS_DIV = '.argument-details-container';
+
+const DISABLE_COLOR = '#AAAAAA';
+const ENABLE_COLOR = '#000000';

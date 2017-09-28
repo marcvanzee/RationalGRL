@@ -88,9 +88,9 @@ joint.shapes.tm.Argument = joint.shapes.basic.Path.extend({
             text: { 
                 'ref-y': 0.5, 
                 'y-alignment': 'middle',
+                fill: '#CCCCCC',
             },
             path: { 
-                fill: '#ffffff',
                 stroke: '#000000',
                 'stroke-width': 2,
                 d: 'M 0 0 L 80 0 80 10 90 5 80 20 80 40 0 40 Z',
@@ -155,6 +155,12 @@ joint.shapes.tm.ElementView = joint.dia.ElementView.extend({
         setLabel: function(name) {
             this.$box.find('.label').text(name);
         },
+        disable: function() {
+            this.$box.find('.label').css('color', DISABLE_COLOR);
+        },
+        enable: function() {
+            this.$box.find('.label').css('color', ENABLE_COLOR);
+        },
         getLabel: function(name) {
             return this.$box.find('.label').text();
         },
@@ -180,12 +186,12 @@ joint.shapes.tm.Contribution = joint.dia.Link.extend({
         attrs: {
             '.marker-target': { 
                 d: 'M 15 0 L 0 8 15 15 0 8 15 8 0 8 15 0',
-                'stroke-width': 3 
+                'stroke-width': 3,
             },
-            '.connection': { 'stroke-width': 3 },
+            '.connection': { 'stroke-width': 3, },
         },
         labels: [
-        { position: 0.5, attrs: { text: { text: 'help (+)', },  }}
+        { position: 0.5, attrs: { text: { text: 'help (+)'},  }}
     ]
     }, joint.dia.Link.prototype.defaults)
 });

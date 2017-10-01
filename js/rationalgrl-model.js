@@ -129,8 +129,6 @@ questionsDatabase.addQuestion(
           CriticalQuestionEffect.DISABLE));
 
 
-
-
 class IEElement {
   constructor(id, type, name) {
     this.id = id;
@@ -140,7 +138,7 @@ class IEElement {
     this.decompositionType = null;
     this.notes = '';
   }
-  getName() { 
+  getName() {
     const name = this.names.slice(-1)[0];
     if (!name) console.error("No name for element with id ", this.id);
     return name;
@@ -158,7 +156,7 @@ class IELink {
     this.notes = '';
   }
 
-  getName() { 
+  getName() {
     return this.type;
   }
 }
@@ -215,7 +213,7 @@ class RationalGRLModel {
       console.error("Type not valid element: ", type);
       return;
     }
-    this.elementIdMap[id] = 
+    this.elementIdMap[id] =
         isArgument(type) ?
           new Argument(id, name)
         : new IEElement(id, type, name);
@@ -243,7 +241,7 @@ class RationalGRLModel {
           if (link.toId == id) {
             linksToRemove.push(link);
             map[key].splice(i,1);
-          } 
+          }
         }
         // If all elements are removed, remove the entry from the map.
         if (!map[key].length) delete map[key];
@@ -264,7 +262,7 @@ class RationalGRLModel {
   removeLink(id) {
     const decompLink = this.linkIdMap[id];
     const isAttack = decompLink && decompLink.type == LinkType.ATTACK;
-    if (decompLink && decompLink.type == LinkType.DECOMPOSITION && 
+    if (decompLink && decompLink.type == LinkType.DECOMPOSITION &&
         !Object.values(this.decompositionMap).some(link => link.toId == decompLink.toId)) {
       const element = this.getElement(decompLink.toId);
       element.decompositionType = null;
@@ -279,7 +277,7 @@ class RationalGRLModel {
           const link = map[key][i];
           if (link.id == id) {
             map[key].splice(i,1);
-          } 
+          }
         }
         // If all elements are removed, remove the entry from the map.
         if (!map[key].length) delete map[key];
@@ -315,7 +313,7 @@ class RationalGRLModel {
     let map = null;
     this.graphElementMap[link.id] = graphLink;
     switch(type) {
-      case LinkType.ATTACK: 
+      case LinkType.ATTACK:
         map = this.attackMap;
         break;
       case LinkType.CONTRIBUTION:
@@ -428,12 +426,12 @@ class RationalGRLModel {
       alert('Argumentation network has cycles. This is currently not supported. Please remove the cycles.');
       return;
     }
-    // The algorithm goes as follows: 
+    // The algorithm goes as follows:
     // 0. set attack status of all arguments to OUT.
     // 1. start from the unattacked arguments.
     // 2. for each argument A1, recursively set successor A2 as follows:
     //    a. If A1 is IN, A2 is OUT
-    //    b. If A1 is OUT 
+    //    b. If A1 is OUT
     //       b1. If all other attackers of A2 are OUT, A2 is IN
     //       b2. If some attacker of A2 is IN, A2 is OUT
     // This process proceeds depth-first.
@@ -441,7 +439,7 @@ class RationalGRLModel {
     // Get attacked elements.
     const attackMap = this.attackMap;
     const allLinks = [].concat.apply([], Object.values(attackMap));
-    const unattackedArgumentIds = Object.keys(attackMap).filter(elementId => 
+    const unattackedArgumentIds = Object.keys(attackMap).filter(elementId =>
       !allLinks.some(link => link.toId == elementId));
     // Set all elements involved in arguments or attacks to OUT.
     for (const link of allLinks) {

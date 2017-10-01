@@ -2,6 +2,8 @@
  * Listeners
  */
 
+$(document).ready(function() {
+
 $('.sidebarElement').on('click', function(e) {
     $('body').css('cursor', 'crosshair');
     $('.sidebarElement').each(function(i, obj) {
@@ -114,7 +116,7 @@ Paper.on('cell:pointerdown', function(cellView, evt, x, y) {
     function onDragEnd(evt) {
         $(document).off('.example');
     }
-    
+
 });
 
 Paper.on('cell:pointerup', function(cellView, evt, x, y) {
@@ -129,7 +131,7 @@ Paper.on('cell:pointerup', function(cellView, evt, x, y) {
         _this.resetState();
         return;
     }
-    
+
     sourceView.options.interactive = true;
 
     const sourceId = sourceView.model.id;
@@ -175,7 +177,7 @@ Paper.on('cell:pointermove', function (cellView, evt, x, y) {
     if (bbox.y + bbox.height >= HEIGHT) { constrainedY = y - GRID_SIZE; constrained = true }
 
     //if you fire the event all the time you get a stack overflow
-    if (constrained) { 
+    if (constrained) {
         cellView.pointermove(evt, constrainedX, constrainedY);
     }
 });
@@ -211,7 +213,7 @@ $(ELEMENT_DETAILS_DIV).on("click", ".critical-question-button", function() {
     if (rationalGrlModel.elementHasAnswer(ELEMENT_DETAILS.id, name)) {
         CRITICAL_QUESTION_DETAILS = rationalGrlModel.getAnswer(ELEMENT_DETAILS.id, name);
     } else {
-        CRITICAL_QUESTION_DETAILS = jQuery.extend(true, {}, 
+        CRITICAL_QUESTION_DETAILS = jQuery.extend(true, {},
             questionsDatabase.getQuestionByName(name));
     }
     showCriticalQuestionDetails();
@@ -225,7 +227,7 @@ $(LINK_DETAILS_DIV).on("click", ".critical-question-button", function() {
     if (rationalGrlModel.elementHasAnswer(LINK_DETAILS.id, name)) {
         CRITICAL_QUESTION_DETAILS = rationalGrlModel.getAnswer(LINK_DETAILS.id, name);
     } else {
-        CRITICAL_QUESTION_DETAILS = jQuery.extend(true, {}, 
+        CRITICAL_QUESTION_DETAILS = jQuery.extend(true, {},
             questionsDatabase.getQuestionByName(name));
     }
     showCriticalQuestionDetails();
@@ -236,7 +238,7 @@ $(QUESTION_DETAILS_DIV).on("click", ".answer-button", function() {
     const curDiv = $(QUESTION_DETAILS_DIV);
     const element = ELEMENT_DETAILS || LINK_DETAILS;
     const cq = CRITICAL_QUESTION_DETAILS;
-    const answer = curDiv.find('.answer-selector option:selected').text(); 
+    const answer = curDiv.find('.answer-selector option:selected').text();
     const explanation = curDiv.find('.explanation-input').val();
     const elementName = curDiv.find('.element-input').val();
 
@@ -247,6 +249,11 @@ $(QUESTION_DETAILS_DIV).on("click", ".answer-button", function() {
     }
 });
 
+$(QUESTION_DETAILS_DIV).on("click", ".back-button", function() {
+    if (ELEMENT_DETAILS) showElementDetails();
+    else showLinkDetails();
+});
+
 $(ARGUMENT_DETAILS_DIV).on("click", ".save-button", function() {
     const argument = ELEMENT_DETAILS;
     const container = $(ARGUMENT_DETAILS_DIV);
@@ -255,14 +262,20 @@ $(ARGUMENT_DETAILS_DIV).on("click", ".save-button", function() {
     rationalGrlModel.rename(argument.id, container.find('.name').val());
 });
 
-$('.decomposition-type-selector').on("change", function() {
+$('.decomposition-type-selector').on("selectmenuchange", function() {
     if (!this.value) return;
     ELEMENT_DETAILS.decompositionType = DecompositionType[this.value];
     rationalGrlModel.changeDecompositionTypeOf(ELEMENT_DETAILS.id, this.value);
 });
 
-$('.contribution-value-selector').on("change", function() {
+$('.contribution-value-selector').on("selectmenuchange", function() {
     if (!this.value) return;
     LINK_DETAILS.contributionValue = ContributionValue[this.value];
     rationalGrlModel.getView(LINK_DETAILS.id).model.prop('labels/0/attrs/text/text', LINK_DETAILS.contributionValue);
+});
+
+$('.grl-export-button').on("click", function() {
+    exportToGrl();
+});
+
 });

@@ -7,12 +7,12 @@
  <script src="js/lib/backbone.js"></script>
  <script src="js/lib/easytabs.min.js"></script>
  <script src="js/lib/joint.js"></script>
+ <script src="js/lib/jquery-ui.js"></script>
 
  <!-- Style files -->
  <link rel="stylesheet" href="css/rationalgrl.css" />
  <link rel="stylesheet" href="css/joint.css" />
- <link rel="stylesheet" href="css/jquery.contextMenu.min.css" />
- <link rel="stylesheet" href="css/jqx.base.css" type="text/css" />
+ <link rel="stylesheet" href="css/jquery-ui.css">
 </head>
 <body>
 
@@ -29,7 +29,8 @@
     <img class="sidebarElement" id="decomposition" src="img/decomposition.png">
     <img class="sidebarElement" id="contribution" src="img/contribution.png">
     <img class="sidebarElement" id="dependency" src="img/dependency.png">
-    <img class="sidebarElement" id="attack" src="img/attack.png"><br><br> 
+    <img class="sidebarElement" id="attack" src="img/attack.png"><br><br>
+    <button type="button" class="grl-export-button ui-button ui-widget ui-corner-all">Export to GRL</button>
   </div>
   <div id="paper"></div>
 </div>
@@ -41,7 +42,12 @@
     </thead>
     <tr>
       <td class="table-key">Element name</td>
-      <td class="table-value"><input class="element-name-input"><button type="button" class="rename-button">Rename</button></td>
+      <td class="table-value">
+        <input class="element-name-input">
+        <button type="button" class="rename-button ui-button ui-widget ui-corner-all">
+          Rename
+        </button>
+      </td>
     </tr>
     <tr>
       <td class="table-key">Element type</td>
@@ -58,7 +64,7 @@
         </td>
       </tr>
     <tr>
-      <td class="table-key">Critical questions</td>
+      <td class="table-key cq-key">Critical questions</td>
       <td class="table-value"><div class="critical-questions"></div></td>
     </tr>
     <tr>
@@ -99,7 +105,8 @@
       <td class="table-value"><input class="explanation-input"></td>
     </tr>
   </table>
-  <button type="button" class="answer-button">Answer</button>
+  <button type="button" class="answer-button ui-button ui-widget ui-corner-all">Answer question</button>
+  <button type="button" class="back-button ui-button ui-widget ui-corner-all">Go back</button>
 </div>
 <div class="argument-details-container">
   <table class="argument-table">
@@ -119,7 +126,7 @@
       <td class="table-value"><div class="critical-question"></div></td>
     </tr>
   </table>
-  <button type="button" class="save-button">Save</button>
+  <button type="button" class="save-button ui-button ui-widget ui-corner-all">Save</button>
 </div>
 <div class="link-details-container">
   <table class="link-table">
@@ -163,5 +170,6 @@
 <script src="js/shapes.js"></script>
 <script src="js/rationalgrl-model.js"></script>
 <script src="js/listeners.js"></script>
+<script src="js/grl-exporter.js"></script>
 </body>
 </html>

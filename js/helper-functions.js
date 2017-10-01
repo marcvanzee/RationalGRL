@@ -10,7 +10,7 @@ function currentlyAddingIE() {
     const insertOp = CUR_INSERT_OPERATION;
     return insertOp == InsertOperation.SOFTGOAL ||
             insertOp == InsertOperation.GOAL ||
-            insertOp == InsertOperation.TASK || 
+            insertOp == InsertOperation.TASK ||
             insertOp == InsertOperation.RESOURCE ||
             insertOp == InsertOperation.ACTOR;
 }
@@ -65,7 +65,7 @@ function resetState() {
 function linkExists(el1, el2) {
     if (el1 == null || el2 == null) { return false; }
     var links = Graph.getConnectedLinks(el1.model);
-    
+
     var returnValue = false;
     _.each(links, function(link) {
         if (link.get('source').id == el2.model.id || link.get('target').id == el2.model.id) {
@@ -112,20 +112,28 @@ function isWithinBounds(x, y) {
 
 function nextId() { return ELEMENT_COUNTER++; }
 
-function isArgument(type) { 
+function isArgument(type) {
     return type == ElementType.ARGUMENT;
 }
 
-function isElement(type) { 
+function isElement(type) {
     return Object.values(ElementType).indexOf(type) > -1 && type != ElementType.UNKNOWN;
 }
 
-function isAttack(type) {
-    return type = LinkType.ATTACK;
+function isIntentionalElement(type) {
+    return isElement(type) && !isArgument(type);
 }
 
-function isLink(type) { 
-    return Object.values(LinkType).indexOf(type) > -1 && LinkType.UNKNOWN;
+function isAttack(type) {
+    return type == LinkType.ATTACK;
+}
+
+function isLink(type) {
+    return Object.values(LinkType).indexOf(type) > -1 && type != LinkType.UNKNOWN;
+}
+
+function isIntentionalLink(type) {
+    return isLink(type) && !isAttack(type);
 }
 
 function getType(graphElement) {
@@ -184,22 +192,24 @@ function showElementDetails() {
       detailsPane.find(decompTypeClass).hide();
     }
 
-    let criticalQuestionHtml = '';
+    let criticalQuestionHtml = '<table>';
     for (const question of questionsDatabase.getQuestionsForType(element.type)) {
         const name = question.name;
         const questionReplaced = replaceQuestionForElement(question.question, element);
         if (rationalGrlModel.elementHasAnswer(element.id, name)) {
             const answer = rationalGrlModel.getAnswer(element.id, name).appliedAnswer;
 
-            criticalQuestionHtml += '' + questionReplaced + 
-                ' <strong> (Answer: ' + answer + ')</strong> <button type="button" class="critical-question-button" name="' + 
-                question.name + '">View existing answer</button><br>';
+            criticalQuestionHtml += '<tr><td>' + questionReplaced +
+                ' <strong> (Answer: ' + answer + ')</strong></td><td><button type="button" ' +
+                'class="critical-question-button ui-button ui-widget ui-corner-all" name="' +
+                question.name + '">View existing answer</button></td>';
         } else {
-            criticalQuestionHtml += '' + questionReplaced + 
-                ' <button type="button" class="critical-question-button" name="' + 
-                question.name + '">Answer</button><br>';
+            criticalQuestionHtml += '<tr><td>' + questionReplaced +
+                '</td><td><button type="button" class="critical-question-button ui-button ui-widget ui-corner-all" name="' +
+                question.name + '">Answer</button></td></tr>';
         }
     }
+    criticalQuestionHtml += '</table>';
     detailsPane.find('.critical-questions').html(criticalQuestionHtml || 'No questions found');
     setNamingHistoryDiv(element);
     showDetailsDiv(ELEMENT_DETAILS_DIV);
@@ -226,8 +236,9 @@ function showCriticalQuestionDetails() {
         return;
     }
     const question = CRITICAL_QUESTION_DETAILS;
+    const isAnswered = question.appliedAnswer != null;
     let element = ELEMENT_DETAILS ? ELEMENT_DETAILS : LINK_DETAILS;
-    let questionReplaced = isLink(element.type) ? 
+    let questionReplaced = isLink(element.type) ?
                         replaceQuestionForLink(question.question, element)
                        : replaceQuestionForElement(question.question, element);
     const detailsPane = $('.question-details-container');
@@ -236,7 +247,19 @@ function showCriticalQuestionDetails() {
     detailsPane.find('.answer-selector option[value="answer-apply"]').text(question.answerApply);
     detailsPane.find('.answer-selector option[value="answer-dont-apply"]').html(question.answerDontApply);
     detailsPane.find('.explanation-input').val(question.explanation);
-    detailsPane.find('.answer-button').html(question.appliedAnswer ? "Update answer" : "Answer question");
+
+    const disabledValue = isAnswered ? 'disabled' : false;
+
+    detailsPane.find('.answer-selector').selectmenu( "option", "disabled", isAnswered);
+    detailsPane.find('.element-input').prop('disabled', disabledValue);
+    detailsPane.find('.explanation-input').prop('disabled', disabledValue);
+
+    if (isAnswered) {
+        detailsPane.find('.answer-button').hide();
+    } else {
+        detailsPane.find('.answer-button').show();
+    }
+
     if (isLink(element.type)) {
         detailsPane.find('.element-container').show();
         detailsPane.find('.element-input').val(question.addedElement);
@@ -283,7 +306,7 @@ function applyDisableEffect() {
     const element = ELEMENT_DETAILS;
     const view = rationalGrlModel.getView(element.id);
     const position = view.model.attributes.position;
-    const argument = addNewElementAt(position.x + 100, position.y + 150, 
+    const argument = addNewElementAt(position.x + 100, position.y + 150,
                     ElementType.ARGUMENT, CRITICAL_QUESTION_DETAILS.name);
 
     const link = createLink(LinkType.ATTACK);
@@ -305,10 +328,10 @@ function applyIntroEffect(effect, elementName) {
     }
     const addSrc = (effect == CriticalQuestionEffect.INTRO_SOURCE);
     const link = LINK_DETAILS;
-    
+
     const view = rationalGrlModel.getView(addSrc ? link.fromId : link.toId);
     const position = view.model.attributes.position;
-    const newElement = addNewElementAt(position.x + 100, position.y + 150, 
+    const newElement = addNewElementAt(position.x + 100, position.y + 150,
                     getType(view.model), elementName);
 
     const newLink = createLink(link.type);
@@ -358,14 +381,14 @@ function createLink(type) {
         case LinkType.DECOMPOSITION: return new joint.shapes.tm.Decomposition;
         case LinkType.DEPENDENCY: return new joint.shapes.tm.Dependency;
         case LinkType.ATTACK: return new joint.shapes.tm.Attack;
-        default: 
+        default:
             console.error('Cannot create link: unknown type', type);
             return null;
     }
 }
 
 function showArgumentDetails() {
-    if (!ELEMENT_DETAILS || 
+    if (!ELEMENT_DETAILS ||
             rationalGrlModel.getType(ELEMENT_DETAILS.id) != ElementType.ARGUMENT) {
         console.error("Cannot show argument details: No element selected");
         return;
@@ -383,7 +406,7 @@ function showArgumentDetails() {
     } else {
         const question = questionsDatabase.getQuestionByName(questionName);
         questionHtml.html(question.question + ' (' + question.name + ')');
-    } 
+    }
     showDetailsDiv(ARGUMENT_DETAILS_DIV);
 }
 
@@ -404,7 +427,7 @@ function showLinkDetails() {
         $('.contribution-value-selector').val(contrKey).change();
         detailsPane.find(contrClass).show();
     }
-    let criticalQuestionHtml = '';
+    let criticalQuestionHtml = '<table>';
     for (const question of questionsDatabase.getQuestionsForType(link.type)) {
         const name = question.name;
         const srcType = rationalGrlModel.getElement(link.fromId).type.toLowerCase();
@@ -413,15 +436,17 @@ function showLinkDetails() {
         if (rationalGrlModel.elementHasAnswer(link.id, name)) {
             const answer = rationalGrlModel.getAnswer(link.id, name).appliedAnswer;
 
-            criticalQuestionHtml += '' + questionReplaced + 
-                ' <strong> (Answer: ' + answer + ')</strong> <button type="button" class="critical-question-button" name="' + 
-                question.name + '">View existing answer</button><br>';
+            criticalQuestionHtml += '<tr><td>' + questionReplaced +
+                ' <strong> (Answer: ' + answer + ')</strong></td><td><button type="button" ' +
+                'class="critical-question-button ui-button ui-widget ui-corner-all" name="' +
+                question.name + '">View existing answer</button></td></tr>';
         } else {
-            criticalQuestionHtml += '' + questionReplaced + 
-                ' <button type="button" class="critical-question-button" name="' + 
-                question.name + '">Answer</button><br>';
+            criticalQuestionHtml += '<tr><td>' + questionReplaced +
+                '</td><td><button type="button" class="critical-question-button ui-button ui-widget ui-corner-all" name="' +
+                question.name + '">Answer</button></td></tr>';
         }
     }
+    criticalQuestionHtml += '</table>';
     detailsPane.find('.critical-questions').html(criticalQuestionHtml || 'No questions found');
 
     showDetailsDiv(LINK_DETAILS_DIV);

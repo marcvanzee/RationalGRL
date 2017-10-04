@@ -278,4 +278,13 @@ $('.grl-export-button').on("click", function() {
     exportToGrl();
 });
 
+$( ".decomposition-type-selector" ).selectmenu();
+$( ".answer-selector" ).selectmenu();
+$( ".contribution-value-selector" ).selectmenu();
+
+$(window).resize(function() {
+    var canvas = $('#paper');
+    Paper.setDimensions(canvas.width(), canvas.height());
+});
+
 });

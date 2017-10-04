@@ -107,7 +107,8 @@ function canEndLinkAtElement(element) {
 }
 
 function isWithinBounds(x, y) {
-    return x > 0 && y > 0 && x < WIDTH && y < HEIGHT;
+    const canvas = $('#paper');
+    return x > 0 && y > 0 && x < canvas.width() && y < canvas.height();
 }
 
 function nextId() { return ELEMENT_COUNTER++; }
@@ -184,9 +185,11 @@ function showElementDetails() {
     detailsPane.find('.element-name-input').val(element.getName());
     detailsPane.find('.element-type').html(element.type);
     const decompTypeClass = '.decomposition-type-row';
+    const hasDecomposiiton = element.decompositionType;
     if (element.decompositionType) {
       const decompKey = getKeyByValue(DecompositionType, element.decompositionType);
-      $('.decomposition-type-selector').val(decompKey).change();
+      $('.decomposition-type-selector').val(decompKey);
+      $('.decomposition-type-selector').selectmenu("refresh");
       detailsPane.find(decompTypeClass).show();
     } else {
       detailsPane.find(decompTypeClass).hide();
@@ -241,6 +244,7 @@ function showCriticalQuestionDetails() {
     let questionReplaced = isLink(element.type) ?
                         replaceQuestionForLink(question.question, element)
                        : replaceQuestionForElement(question.question, element);
+    question.question = questionReplaced;
     const detailsPane = $('.question-details-container');
     detailsPane.find('.element-name').html(element.getName());
     detailsPane.find('.critical-question').html(questionReplaced);
@@ -253,6 +257,10 @@ function showCriticalQuestionDetails() {
     detailsPane.find('.answer-selector').selectmenu( "option", "disabled", isAnswered);
     detailsPane.find('.element-input').prop('disabled', disabledValue);
     detailsPane.find('.explanation-input').prop('disabled', disabledValue);
+
+    const selectValue = isAnswered && question.appliedAnswer == question.answerApply? "answer-apply" : "answer-dont-apply";
+    detailsPane.find('.answer-selector').val(selectValue);
+    detailsPane.find('.answer-selector').selectmenu("refresh");
 
     if (isAnswered) {
         detailsPane.find('.answer-button').hide();
@@ -306,8 +314,9 @@ function applyDisableEffect() {
     const element = ELEMENT_DETAILS;
     const view = rationalGrlModel.getView(element.id);
     const position = view.model.attributes.position;
-    const argument = addNewElementAt(position.x + 100, position.y + 150,
+    const argument = addNewElementAt(position.x + 50, position.y + 80,
                     ElementType.ARGUMENT, CRITICAL_QUESTION_DETAILS.name);
+    rationalGrlModel.getElement(argument.id).explanation = CRITICAL_QUESTION_DETAILS.explanation;
 
     const link = createLink(LinkType.ATTACK);
     link.set({
@@ -317,7 +326,7 @@ function applyDisableEffect() {
     Graph.addCells([link]);
 
     rationalGrlModel.addLink(link.id, LinkType.ATTACK, argument.id, element.id, link);
-    rationalGrlModel.linkArgumentToQuestion(argument.id, CRITICAL_QUESTION_DETAILS.name);
+    rationalGrlModel.linkArgumentToQuestion(argument.id, CRITICAL_QUESTION_DETAILS);
 }
 
 function applyIntroEffect(effect, elementName) {
@@ -331,7 +340,7 @@ function applyIntroEffect(effect, elementName) {
 
     const view = rationalGrlModel.getView(addSrc ? link.fromId : link.toId);
     const position = view.model.attributes.position;
-    const newElement = addNewElementAt(position.x + 100, position.y + 150,
+    const newElement = addNewElementAt(position.x + 50, position.y + 80,
                     getType(view.model), elementName);
 
     const newLink = createLink(link.type);
@@ -365,7 +374,9 @@ function addNewElementAt(x, y, type, name) {
         case ElementType.ARGUMENT:
             newGraphElement = new joint.shapes.tm.Argument;
     }
-    newGraphElement.position(Math.max(0,x-50), Math.max(0,y-30));
+    const canvas = $('#paper');
+    newGraphElement.position(Math.min(Math.max(0,x), canvas.width()-ELEMENT_WIDTH), 
+                             Math.min(Math.max(0,y), canvas.height()-ELEMENT_HEIGHT));
     Graph.addCells([newGraphElement]);
     rationalGrlModel.addElement(newGraphElement, name);
 
@@ -400,13 +411,10 @@ function showArgumentDetails() {
     detailsPane.find('.explanation').val(argument.explanation);
     const questionHtml = detailsPane.find('.critical-question');
 
-    const questionName = rationalGrlModel.getCriticalQuestionForArgument(argument.id);
-    if (!questionName) {
-        questionHtml.html('(None)');
-    } else {
-        const question = questionsDatabase.getQuestionByName(questionName);
-        questionHtml.html(question.question + ' (' + question.name + ')');
-    }
+    const question = rationalGrlModel.getCriticalQuestionForArgument(argument.id);
+
+    detailsPane.find('.explanation').prop("disabled", (question ? "disabled" : false));
+    detailsPane.find('.critical-question').html(question ? question.question : "(None)");
     showDetailsDiv(ARGUMENT_DETAILS_DIV);
 }
 
@@ -424,7 +432,7 @@ function showLinkDetails() {
     detailsPane.find(contrClass).hide();
     if (link.type == LinkType.CONTRIBUTION) {
         const contrKey = getKeyByValue(ContributionValue, link.contributionValue);
-        $('.contribution-value-selector').val(contrKey).change();
+        $('.contribution-value-selector').val(contrKey).selectmenu("refresh");
         detailsPane.find(contrClass).show();
     }
     let criticalQuestionHtml = '<table>';

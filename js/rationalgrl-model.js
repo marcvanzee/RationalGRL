@@ -103,8 +103,8 @@ questionsDatabase.addQuestion(
   new CriticalQuestion("CQ2a", "Is the task possible?", "No", "Yes",
           [ElementType.TASK], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQ2b", "Does the task contribute negatively to some softgoal?", "Yes", "No",
-          [ElementType.TASK], CriticalQuestionEffect.INTRO_LINK));
+  new CriticalQuestion("CQ2b", "Does the task have any negative side-effects?", "Yes", "No",
+          [ElementType.TASK], CriticalQuestionEffect.DISABLE));
 questionsDatabase.addQuestion(
   new CriticalQuestion("CQ3", "Can the goal be realized?", "No", "Yes",
           [ElementType.GOAL], CriticalQuestionEffect.DISABLE));
@@ -121,8 +121,14 @@ questionsDatabase.addQuestion(
   new CriticalQuestion("CQIntroSrcDecomp", "Does the #2 decompose into other #1s?", "Yes", "No",
           [LinkType.DECOMPOSITION], CriticalQuestionEffect.INTRO_SOURCE));
 questionsDatabase.addQuestion(
-  new CriticalQuestion("CQIntroDestDecomp", "Does the #1 contribute to other #2s?", "Yes", "No",
+  new CriticalQuestion("CQIntroDestDecomp", "Is the #1 a decomposition for other #2s?", "Yes", "No",
           [LinkType.DECOMPOSITION], CriticalQuestionEffect.INTRO_DEST));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQIntroSrcDep", "Does the #2 depend on other #1s?", "Yes", "No",
+          [LinkType.DEPENDENCY], CriticalQuestionEffect.INTRO_SOURCE));
+questionsDatabase.addQuestion(
+  new CriticalQuestion("CQIntroDestDep", "Is the #1 a dependency for other #2s?", "Yes", "No",
+          [LinkType.DEPENDENCY], CriticalQuestionEffect.INTRO_DEST));
 questionsDatabase.addQuestion(
   new CriticalQuestion("CQ11", "Is the #1 relevant/useful?", "No", "Yes",
           [ElementType.SOFTGOAL, ElementType.GOAL, ElementType.TASK, ElementType.RESOURCE],
@@ -258,13 +264,16 @@ class RationalGRLModel {
   }
 
   // Remove link and empties decompostion text if the link is a decomposition
-  // and not further decompositions exist to the same element.
+  // and no further decompositions exist to the same element.
   removeLink(id) {
-    const decompLink = this.linkIdMap[id];
-    const isAttack = decompLink && decompLink.type == LinkType.ATTACK;
-    if (decompLink && decompLink.type == LinkType.DECOMPOSITION &&
-        !Object.values(this.decompositionMap).some(link => link.toId == decompLink.toId)) {
-      const element = this.getElement(decompLink.toId);
+    const link = this.linkIdMap[id];
+    const isAttack = link && link.type == LinkType.ATTACK;
+    const isDecompLink = link && link.type == LinkType.DECOMPOSITION;
+    const decompLinks = [].concat.apply([], Object.values(this.decompositionMap));
+    if (isDecompLink && !decompLinks
+          .some(decompLink => decompLink.toId == link.toId 
+                && decompLink.id != link.id)) {
+      const element = this.getElement(link.toId);
       element.decompositionType = null;
       this.getView(element.id).setDecomposition('');
 
@@ -376,8 +385,8 @@ class RationalGRLModel {
     return null;
   }
 
-  linkArgumentToQuestion(id, name) {
-    this.argumentIdToCriticalQuestionMap[id] = name;
+  linkArgumentToQuestion(id, question) {
+    this.argumentIdToCriticalQuestionMap[id] = question;
   }
 
   getType(id) {
@@ -436,7 +445,7 @@ class RationalGRLModel {
     //       b2. If some attacker of A2 is IN, A2 is OUT
     // This process proceeds depth-first.
 
-    // Get attacked elements.
+    // Get unattacked elements.
     const attackMap = this.attackMap;
     const allLinks = [].concat.apply([], Object.values(attackMap));
     const unattackedArgumentIds = Object.keys(attackMap).filter(elementId =>
@@ -469,6 +478,11 @@ class RationalGRLModel {
           toProcess.push.apply(toProcess, nextElements.map(link => link.toId));
         }
       }
+    }
+    for (const link of Object.values(this.linkIdMap)) {
+      link.acceptStatus = [this.getElement(link.fromId), this.getElement(link.toId)]
+          .some(el => el.acceptStatus == ElementAcceptStatus.REJECTED) ?
+          ElementAcceptStatus.REJECTED : ElementAcceptStatus.ACCEPTED;
     }
     this.setElementsColor();
   }

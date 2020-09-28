@@ -379,36 +379,40 @@ class RationalGRLModel {
   getAttackRelation() {
     let attackRelation = {}
     for (const [fromId, attackLinks] of Object.entries(this.attackMap)) {
-      let toIds = new Set();
-      for (const attackLink of attackLinks) { toIds.add(attackLink.toId); }
+      let toIds = [];
+      for (const attackLink of attackLinks) { toIds.push(attackLink.toId); }
       attackRelation[fromId] = toIds;
     }
     return attackRelation;
   }
 
   computeExtension() {
-    // We use the preferred extension.
-    this.computePreferredExtension();
-    // But one could also use the grounded (if there are no cycles).
-    // computeGroundedExtension(this)
-
-    this.setElementsColor();
-  }
-
-  computePreferredExtension() {
-    console.log('Computing preferred!')
     const args = this.getArguments();
     const attacks = this.getAttackRelation();
-    const extensions = this.preferredSemantics.getExtensions(args, attacks);
-    console.log(extensions);
+    // We use the grounded extension.t
+    const extension = computeGroundedExtension(args, attacks);
+    // The preferred extension is still experimental.
+    // const extensions = getPreferredExtensions(args, attacks);
+
+    for (const [id, label] of Object.entries(extension)) {
+      this.getElement(id).acceptStatus = label;
+    }
+
+    this.setElementsColor();
   }
 
   setElementsColor() {
     for (const [id,elem] of Object.entries(this.elementIdMap)) {
       const view = this.getView(id);
       const isAccepted = elem.acceptStatus == ElementAcceptStatus.IN;
-      view.model.attr('path/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
-      view.model.attr('rect/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
+      let box_color = DISABLE_COLOR;
+      if (elem.acceptStatus == ElementAcceptStatus.OUT) {
+        box_color = OUT_COLOR;
+      } else if (elem.acceptStatus == ElementAcceptStatus.IN) {
+        box_color = ENABLE_COLOR;
+      }
+      view.model.attr('path/stroke', box_color);
+      view.model.attr('rect/stroke', box_color);
       if (isAccepted) {
         view.enable();
       } else {

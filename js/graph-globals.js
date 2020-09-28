@@ -52,6 +52,7 @@ let ARGUMENT_DETAILS_DIV = '.argument-details-container';
 
 const DISABLE_COLOR = '#AAAAAA';
 const ENABLE_COLOR = '#000000';
+const OUT_COLOR = '#f54242';
 
 const ELEMENT_WIDTH = 120;
 const ELEMENT_HEIGHT = 40;

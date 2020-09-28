@@ -6,19 +6,6 @@ OUT = ElementAcceptStatus.OUT
 MUST_OUT = "Must Out"
 UNDECIDED = ElementAcceptStatus.UNDECIDED
 
-function reverseAttackRelation(arguments, attackRelation) {
-  let reversedAttacks = {}
-  for (const attacker of arguments) {
-    reversedAttacks[attacker] = reversedAttacks[attacker] || new Set();
-    const attackedArguments = attackRelation[attacker] || [];
-    for (const attacked of attackedArguments) {
-      reversedAttacks[attacked] = reversedAttacks[attacked] || new Set();
-      reversedAttacks[attacked].add(attacker);
-    }
-  }
-  return reversedAttacks;
-}
-
 class SearchState {
   // arguments is a list of arguments ids.
   // attackRelation is a map from arguments ids to sets of arguments ids.
@@ -176,4 +163,9 @@ class PreferredSemantics {
     // Undo the label and continue with parent call
     search.undoLabel(blank, null);
   }
+}
+
+function computePreferredExtension(arguments, attackRelation) {
+  preferredSemantics = new PreferredSemantics();
+  return preferredSemantics.getExtensions(arguments, attackRelation);
 }

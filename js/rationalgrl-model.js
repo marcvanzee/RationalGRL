@@ -1,49 +1,3 @@
-const ElementType = {
-  SOFTGOAL: 'Softgoal',
-  GOAL: 'Goal',
-  TASK: 'Task',
-  RESOURCE: 'Resource',
-  ARGUMENT: 'Argument',
-  UNKNOWN: 'Unknown',
-};
-
-const LinkType = {
-  CONTRIBUTION: 'Contribution',
-  DECOMPOSITION: 'Decomposition',
-  DEPENDENCY: 'Dependency',
-  ATTACK: 'Attack',
-  UNKNOWN: 'Unknown',
-};
-
-const DecompositionType = {
-  AND: "and",
-  OR: "or",
-  XOR: "xor",
-};
-
-const ContributionValue = {
-  BREAK: "Break (---)",
-  SOME_NEGATIVE: "Some negative (--)",
-  HURT: "Hurt (-)",
-  UNKNOWN: "Unknown",
-  HELP: "Help (+)",
-  SOME_POSITIVE: "Some positive (++)",
-  MAKE: "Make (+++)",
-};
-
-const ElementAcceptStatus = {
-  ACCEPTED: 'Accepted',
-  REJECTED: 'Rejected',
-  UNDECIDED: 'Undecided',
-};
-
-const CriticalQuestionEffect = {
-  INTRO_SOURCE: 'Intro Source',
-  INTRO_DEST: 'Intro Dest',
-  INTRO_LINK: 'Intro Link',
-  DISABLE: 'Disable',
-};
-
 class CriticalQuestion {
   constructor(name, question, answerApply, answerDontApply, applicableTo, effect) {
     this.name = name;
@@ -140,7 +94,7 @@ class IEElement {
     this.id = id;
     this.names = [name];
     this.type = type;
-    this.acceptStatus = ElementAcceptStatus.ACCEPTED;
+    this.acceptStatus = ElementAcceptStatus.IN;
     this.decompositionType = null;
     this.notes = '';
   }
@@ -157,7 +111,7 @@ class IELink {
     this.fromId = fromId;
     this.toId = toId;
     this.type = type;
-    this.acceptStatus = ElementAcceptStatus.ACCEPTED;
+    this.acceptStatus = ElementAcceptStatus.IN;
     this.contributionValue = ContributionValue.HELP;
     this.notes = '';
   }
@@ -171,7 +125,7 @@ class Argument {
   constructor(id, name) {
     this.id = id;
     this.name = name;
-    this.acceptStatus = ElementAcceptStatus.ACCEPTED;
+    this.acceptStatus = ElementAcceptStatus.IN;
     this.explanation = '';
   }
   getName() { return this.name; }
@@ -210,6 +164,8 @@ class RationalGRLModel {
     // Map from arguments to the name of a critical question. This will be populated
     // if the argument was created as the result of answering a critical question.
     this.argumentIdToCriticalQuestionMap = {};
+
+    this.preferredSemantics = new PreferredSemantics();
   }
 
   addElement(graphElement, name) {
@@ -409,88 +365,48 @@ class RationalGRLModel {
     this.getElement(id).decompositionType = DecompositionType[decompositionType];
     this.getView(id).setDecomposition(decompositionType.toLowerCase());
   }
-  // We simply start from each argument, traverse all possible paths from that
-  // argument and if we encounter the same argument again we have a cycle.
-  hasCycle() {
-    const attackMap = this.attackMap;
-    for (const keyElementId of Object.keys(this.attackMap)) {
-      const visited = [keyElementId];
-      const toProcess = attackMap[keyElementId].map(link => link.toId);
-      while (toProcess.length) {
-        const curElementId = toProcess.splice(toProcess.length-1,1);
-        if (visited.indexOf(curElementId) != -1) return true;
-        const nextElementIds = (attackMap[curElementId] || []).map(link => link.toId);
-        if (nextElementIds.some(id => visited.indexOf(id) != -1)) return true;
-        visited.push(curElementId);
-        if (nextElementIds.length) {
-          toProcess.push.apply(toProcess, nextElementIds);
-        }
+
+  getArguments() {
+    let args = [];
+    for (let arg of Object.values(this.elementIdMap)) {
+      if (arg instanceof Argument) {
+        args.push(arg.id);
       }
     }
-    return false;
+    return args;
+  }
+
+  getAttackRelation() {
+    let attackRelation = {}
+    for (const [fromId, attackLinks] of Object.entries(this.attackMap)) {
+      let toIds = new Set();
+      for (const attackLink of attackLinks) { toIds.add(attackLink.toId); }
+      attackRelation[fromId] = toIds;
+    }
+    return attackRelation;
   }
 
   computeExtension() {
-    if (this.hasCycle()) {
-      alert('Argumentation network has cycles. This is currently not supported. Please remove the cycles.');
-      return;
-    }
-    // The algorithm goes as follows:
-    // 0. set attack status of all arguments to OUT.
-    // 1. start from the unattacked arguments.
-    // 2. for each argument A1, recursively set successor A2 as follows:
-    //    a. If A1 is IN, A2 is OUT
-    //    b. If A1 is OUT
-    //       b1. If all other attackers of A2 are OUT, A2 is IN
-    //       b2. If some attacker of A2 is IN, A2 is OUT
-    // This process proceeds depth-first.
+    // We use the preferred extension.
+    this.computePreferredExtension();
+    // But one could also use the grounded (if there are no cycles).
+    // computeGroundedExtension(this)
 
-    // Get unattacked elements.
-    const attackMap = this.attackMap;
-    const allLinks = [].concat.apply([], Object.values(attackMap));
-    const unattackedArgumentIds = Object.keys(attackMap).filter(elementId =>
-      !allLinks.some(link => link.toId == elementId));
-    // Set all elements involved in arguments or attacks to OUT.
-    for (const link of allLinks) {
-      this.getElement(link.fromId).acceptStatus = ElementAcceptStatus.REJECTED;
-      this.getElement(link.toId).acceptStatus = ElementAcceptStatus.REJECTED;
-    }
-    // Set all other elements to IN.
-    for (const [id,elem] of Object.entries(this.elementIdMap)) {
-      if (!allLinks.some(link => link.fromId == id || link.toId == id)) {
-        elem.acceptStatus = ElementAcceptStatus.ACCEPTED;
-      }
-    }
-    for (const keyArgumentId of unattackedArgumentIds) {
-      this.getElement(keyArgumentId).acceptStatus = ElementAcceptStatus.ACCEPTED;
-      const toProcess = (attackMap[keyArgumentId] || []).map(link => link.toId);
-      while (toProcess.length) {
-        const curElementId = toProcess.splice(0,1);
-        const curElement = this.getElement(curElementId);
-        if (allLinks.some(link => link.toId == curElementId &&
-          this.getElement(link.fromId).acceptStatus == ElementAcceptStatus.ACCEPTED)) {
-          curElement.acceptStatus = ElementAcceptStatus.REJECTED;
-        } else {
-          curElement.acceptStatus = ElementAcceptStatus.ACCEPTED;
-        }
-        const nextElements = attackMap[curElementId];
-        if (nextElements && nextElements.length) {
-          toProcess.push.apply(toProcess, nextElements.map(link => link.toId));
-        }
-      }
-    }
-    for (const link of Object.values(this.linkIdMap)) {
-      link.acceptStatus = [this.getElement(link.fromId), this.getElement(link.toId)]
-          .some(el => el.acceptStatus == ElementAcceptStatus.REJECTED) ?
-          ElementAcceptStatus.REJECTED : ElementAcceptStatus.ACCEPTED;
-    }
     this.setElementsColor();
+  }
+
+  computePreferredExtension() {
+    console.log('Computing preferred!')
+    const args = this.getArguments();
+    const attacks = this.getAttackRelation();
+    const extensions = this.preferredSemantics.getExtensions(args, attacks);
+    console.log(extensions);
   }
 
   setElementsColor() {
     for (const [id,elem] of Object.entries(this.elementIdMap)) {
       const view = this.getView(id);
-      const isAccepted = elem.acceptStatus == ElementAcceptStatus.ACCEPTED;
+      const isAccepted = elem.acceptStatus == ElementAcceptStatus.IN;
       view.model.attr('path/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
       view.model.attr('rect/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
       if (isAccepted) {
@@ -502,8 +418,8 @@ class RationalGRLModel {
     for (const [id,link] of Object.entries(this.linkIdMap)) {
       if (link.type == LinkType.ATTACK) continue; // don't disable attack links
       const view = this.getView(id);
-      const isAccepted = this.getElement(link.fromId).acceptStatus == ElementAcceptStatus.ACCEPTED &&
-                          this.getElement(link.toId).acceptStatus == ElementAcceptStatus.ACCEPTED;
+      const isAccepted = this.getElement(link.fromId).acceptStatus == ElementAcceptStatus.IN &&
+                          this.getElement(link.toId).acceptStatus == ElementAcceptStatus.IN;
       view.model.attr('.marker-target/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
       view.model.attr('.marker-target/fill', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);
       view.model.attr('.marker-source/stroke', isAccepted ? ENABLE_COLOR : DISABLE_COLOR);

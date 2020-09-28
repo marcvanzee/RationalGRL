@@ -55,3 +55,49 @@ const ENABLE_COLOR = '#000000';
 
 const ELEMENT_WIDTH = 120;
 const ELEMENT_HEIGHT = 40;
+
+const ElementType = {
+  SOFTGOAL: 'Softgoal',
+  GOAL: 'Goal',
+  TASK: 'Task',
+  RESOURCE: 'Resource',
+  ARGUMENT: 'Argument',
+  UNKNOWN: 'Unknown',
+};
+
+const LinkType = {
+  CONTRIBUTION: 'Contribution',
+  DECOMPOSITION: 'Decomposition',
+  DEPENDENCY: 'Dependency',
+  ATTACK: 'Attack',
+  UNKNOWN: 'Unknown',
+};
+
+const DecompositionType = {
+  AND: "and",
+  OR: "or",
+  XOR: "xor",
+};
+
+const ContributionValue = {
+  BREAK: "Break (---)",
+  SOME_NEGATIVE: "Some negative (--)",
+  HURT: "Hurt (-)",
+  UNKNOWN: "Unknown",
+  HELP: "Help (+)",
+  SOME_POSITIVE: "Some positive (++)",
+  MAKE: "Make (+++)",
+};
+
+const ElementAcceptStatus = {
+  IN: 'Accepted',
+  OUT: 'Rejected',
+  UNDECIDED: 'Undecided',
+};
+
+const CriticalQuestionEffect = {
+  INTRO_SOURCE: 'Intro Source',
+  INTRO_DEST: 'Intro Dest',
+  INTRO_LINK: 'Intro Link',
+  DISABLE: 'Disable',
+};

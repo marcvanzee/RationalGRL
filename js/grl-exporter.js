@@ -24,7 +24,7 @@ function getElementDefs() {
   let str = ['  <element-def>'];
   for (const element of Object.values(rationalGrlModel.elementIdMap)) {
     if (isIntentionalElement(element.type) &&
-          element.acceptStatus == ElementAcceptStatus.ACCEPTED) {
+          element.acceptStatus == ElementAcceptStatus.IN) {
       str.push(getElementDef(element));
     }
   }
@@ -72,7 +72,7 @@ function getLinkDefs() {
   let str = ['  <link-def>'];
   for (const link of Object.values(rationalGrlModel.linkIdMap)) {
     if (isIntentionalLink(link.type) &&
-          link.acceptStatus == ElementAcceptStatus.ACCEPTED) {
+          link.acceptStatus == ElementAcceptStatus.IN) {
       switch(link.type) {
         case LinkType.DECOMPOSITION:
           str.push(getDecompositionDef(link));
